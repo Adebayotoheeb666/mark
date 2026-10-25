@@ -1,0 +1,11 @@
+{
+  "MATHS": [
+    { "assessment": "CA1", "max": 20, "weight": 20 },
+    { "assessment": "CA2", "max": 20, "weight": 20 },
+    { "assessment": "Exam", "max": 60, "weight": 60 }
+  ],
+  "ENG": [
+    { "assessment": "CA", "max": 40, "weight": 40 },
+    { "assessment": "Exam", "max": 60, "weight": 60 }
+  ]
+}

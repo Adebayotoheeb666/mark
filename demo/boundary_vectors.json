@@ -1,0 +1,9 @@
+[
+  { "case": "max_ok", "max": 20, "value": 20, "valid": true },
+  { "case": "over_max", "max": 20, "value": 21, "valid": false, "rule": "VAL-RANGE-01" },
+  { "case": "negative", "max": 20, "value": -1, "valid": false, "rule": "VAL-RANGE-01" },
+  { "case": "empty", "max": 20, "value": null, "valid": false, "rule": "VAL-MISS-01" },
+  { "case": "weights_99", "weights": [20, 20, 59], "valid": false, "rule": "VAL-WEIGHT-01" },
+  { "case": "weights_100", "weights": [20, 20, 60], "valid": true },
+  { "case": "grade_edge_69_5", "avg": 69.5, "grade": "A", "scale_min_A": 70, "note": "rounding half-up on tenths decides; vector for Phase 1" }
+]

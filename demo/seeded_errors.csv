@@ -1,0 +1,7 @@
+student_short_code,assessment_label,value,expect_flag
+26-JSS2A-001,CA1,17,
+26-JSS2A-001,CA2,25,VAL-RANGE-01
+26-JSS2A-002,CA1,,VAL-MISS-01
+26-JSS2A-002,Exam,58,
+26-JSS2A-003,CA1,4,VAL-JUMP-01
+26-JSS2A-003,Exam,59,

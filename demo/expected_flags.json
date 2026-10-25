@@ -1,0 +1,5 @@
+[
+  { "row": 2, "rule_id": "VAL-RANGE-01", "severity": "blocking" },
+  { "row": 3, "rule_id": "VAL-MISS-01", "severity": "blocking" },
+  { "row": 5, "rule_id": "VAL-JUMP-01", "severity": "warning" }
+]

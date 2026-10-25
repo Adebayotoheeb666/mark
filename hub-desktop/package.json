@@ -1,0 +1,14 @@
+{
+  "name": "agent-mark-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "static": "node scripts/serve.js",
+    "tauri": "tauri",
+    "dev": "node scripts/serve.js & tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

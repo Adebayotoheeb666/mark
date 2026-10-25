@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Mark — school records that never leave the school</title>
+<meta name="description" content="Local-first school records and report cards for Windows. Deterministic validation, two-person approval, signed report cards, encrypted backups. No AI. No cloud. No student data leaving the school PC.">
+<meta property="og:title" content="Agent Mark — school records that never leave the school">
+<meta property="og:description" content="Offline school records and report cards. No AI, no cloud, signed and auditable.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og.png">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<div class="notice"><strong>Pilot preview</strong> — synthetic data only until the external security audit closes. <a href="privacy.html#gate" style="color:#cfe3d4">Why</a></div>
+
+<header class="site-header">
+  <div class="wrap inner">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#14532d"/><path d="M8.5 7.5h12a3 3 0 0 1 3 3v14h-12a3 3 0 0 1-3-3v-14z" fill="none" stroke="#f7f5ef" stroke-width="1.5"/><path d="M11.5 12.5h7M11.5 16h5" stroke="#f7f5ef" stroke-width="1.3" stroke-linecap="round" opacity=".5"/><circle cx="22.5" cy="23.5" r="5.2" fill="#a7d7b3"/><path d="M20.2 23.6l1.6 1.6 3-3.1" fill="none" stroke="#14532d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Agent Mark<small>School records</small></span>
+    </a>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="site-nav">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="site-nav" id="site-nav">
+      <a href="index.html#product">Product</a>
+      <a href="install.html">Install</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="app/">Mobile app</a>
+      <a href="download.html">Download</a>
+    </nav>
+    <a class="btn btn-primary btn-sm header-dl" href="download.html">Download free</a>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Windows 10/11 · offline · no AI</span>
+      <h1>Report cards that never leave the school.</h1>
+      <p class="lede">Agent Mark runs on the staffroom PC. It keeps the roster, checks every score with fixed rules, takes teacher and head approval, signs each report card, and encrypts every backup. Student data does not go to a cloud — because there is no cloud.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="download.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-ghost" href="app/">Open the mobile app</a>
+      </div>
+      <div class="hero-meta">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg> No account needed</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/></svg> No admin rights</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> 5.8 MB installer</span>
+      </div>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      <div class="mock-head">
+        <div class="mock-school">Greenfield Secondary School<small>Terminal report</small></div>
+        <div class="mock-term">2026 · Term 1<br>JSS 2A · 6 students</div>
+      </div>
+      <div class="mock-name"><b>Ada Okafor</b><span>26-JSS2A-001</span></div>
+      <table>
+        <thead><tr><th>Subject</th><th>CA</th><th>Exam</th><th>Avg</th><th>Grade</th></tr></thead>
+        <tbody>
+          <tr><td>Mathematics</td><td>31/40</td><td>47/60</td><td>78.0</td><td><span class="grade">A</span></td></tr>
+          <tr><td>English</td><td>26/40</td><td>38/60</td><td>64.0</td><td><span class="grade b">B</span></td></tr>
+        </tbody>
+      </table>
+      <div class="mock-foot">
+        <div>
+          <div class="sig">A. Bello</div>
+          <div class="tiny muted" style="margin-top:2px">Class teacher</div>
+        </div>
+        <div class="stamp">Signed<small>Ed25519</small></div>
+      </div>
+      <div class="mock-note">Hash-chained audit · backup verified · drill passed</div>
+    </div>
+  </div>
+</section>
+
+<section id="product" class="band">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Everything a term needs, none of the cloud.</h2>
+      <p>Six deterministic steps from roster to a signed report card. Every rule has an ID, every action lands in the audit log.</p>
+    </div>
+    <div class="grid-3">
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+        <h3>Roster import</h3>
+        <p>Bring students in by CSV with a dry run first. Duplicate IDs are reported and nothing is written until you say so.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5m0 14h16"/><path d="M8 15l3-4 3 2 4-6"/></svg></div>
+        <h3>Score capture</h3>
+        <p>Range checks, duplicate detection and missing-score flags. A score is never silently overwritten, and a flag never changes a mark.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Two-person approval</h3>
+        <p>Drafts are reviewed by the class teacher, then the head. Locking re-hashes the payload and signs it — no approval, no signature.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>
+        <h3>Report cards</h3>
+        <p>Print sheets with subject averages, grades and positions. Unapproved cards carry a red DRAFT — NOT OFFICIAL banner.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg></div>
+        <h3>Encrypted backup</h3>
+        <p>Backups are sealed with XChaCha20-Poly1305 and a manifest. A restore drill must pass before the term can go live.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Audit trail</h3>
+        <p>Each action hashes the previous one. Editing history breaks the chain, and the checker script tells you exactly where.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="grid-2" style="align-items:start;gap:clamp(2rem,5vw,4rem)">
+      <div>
+        <span class="eyebrow">Built for trust</span>
+        <h2>No model. No API key. No upload.</h2>
+        <p class="lede" style="font-size:1rem">Agent Mark is deliberately unexciting technology: fixed rules, local files, real signatures. That is the point — a report card should be reproducible years later.</p>
+        <p class="small muted">Read the <a href="privacy.html">privacy note</a> or the technical decisions behind it.</p>
+      </div>
+      <ul class="trust-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>No AI or ML</b>No model, no inference, no training data. Grades come from arithmetic you can check by hand.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Offline by default</b>Works with the network cable unplugged. There is no relay account to create.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Local database</b>SQLite in the school's own AppData folder. Delete the folder for a factory reset.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Real signatures</b>Ed25519 over the exact report payload, verifiable with a public key.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Sealed backups</b>Backup files contain no readable names, classes or marks.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Provable history</b>An offline checker re-verifies the audit chain and every locked report.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="section-head"><h2>A term, in three sittings.</h2><p>Designed for a staffroom PC shared by a class teacher and a head — not for an IT department.</p></div>
+    <div class="steps">
+      <div class="step">
+        <h3>Set up once</h3>
+        <p>Install for the current user, import the roster, add the term's assessments and their weights. No admin password, no server.</p>
+      </div>
+      <div class="step">
+        <h3>Work the term</h3>
+        <p>Enter scores, clear the flag inbox with a reason, pick and edit comments from the bank. Everything is checked as you type.</p>
+      </div>
+      <div class="step">
+        <h3>Close and print</h3>
+        <p>Draft, review, approve, lock and sign. Run the backup and restore drill, then go live and print the cards.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta-band">
+      <div>
+        <h2>Try it with the demo school.</h2>
+        <p>The installer includes six synthetic students. Load them from the dashboard and walk the whole term in ten minutes — no real names required.</p>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <a class="btn btn-light" href="download.html">Download for Windows</a>
+        <a class="btn btn-ghost" href="install.html" style="color:#eaf3ec;border-color:#3f7a55">How to install</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap-narrow">
+    <h2 class="center" style="margin-bottom:1.5rem">Questions schools ask</h2>
+    <details class="card" style="margin-bottom:.6rem">
+      <summary style="cursor:pointer;font-weight:600">Does it need the internet?</summary>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">No. The app is fully offline. The installer bundles Microsoft's WebView2 bootstrapper in case the PC has never had Edge; after that, nothing is downloaded. No licence check, no telemetry.</p>
+    </details>
+    <details class="card" style="margin-bottom:.6rem">
+      <summary style="cursor:pointer;font-weight:600">Where does student data live?</summary>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">In a SQLite database under <code>%APPDATA%\org.agentmark.hub\agent-mark-hub\</code> on that PC, plus encrypted backup files you choose to create. Nothing is uploaded, because the app has no network client.</p>
+    </details>
+    <details class="card" style="margin-bottom:.6rem">
+      <summary style="cursor:pointer;font-weight:600">Is there an AI feature?</summary>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">No. Comments are chosen from a reviewed bank and edited by a teacher. Grades are weighted arithmetic with fixed grade bands. There is no model, no API, and no data collection.</p>
+    </details>
+    <details class="card" style="margin-bottom:.6rem">
+      <summary style="cursor:pointer;font-weight:600">Can teachers use a phone?</summary>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">Yes — there is an installable <a href="app/">mobile app</a> that runs in the phone browser and works offline. It is a companion preview: capture and check scores, preview a card, keep data on the device. The authoritative hub stays on the school PC.</p>
+    </details>
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:600">Is it ready for real students?</summary>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">Not yet. This is a pilot build: use synthetic data until an external security review closes the open findings. <a href="privacy.html#gate">Details</a>.</p>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="index.html" style="margin-bottom:.6rem">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#14532d"/><path d="M8.5 7.5h12a3 3 0 0 1 3 3v14h-12a3 3 0 0 1-3-3v-14z" fill="none" stroke="#f7f5ef" stroke-width="1.5"/><circle cx="22.5" cy="23.5" r="5.2" fill="#a7d7b3"/><path d="M20.2 23.6l1.6 1.6 3-3.1" fill="none" stroke="#14532d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Agent Mark<small>School records</small></span>
+        </a>
+        <p class="small muted" style="max-width:22em">Local-first school records. No AI, no cloud, no student data leaving the school PC.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <ul>
+          <li><a href="download.html">Download</a></li>
+          <li><a href="install.html">Install guide</a></li>
+          <li><a href="app/">Mobile app</a></li>
+          <li><a href="download.html#checksums">Checksums</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="privacy.html#gate">Pilot gate</a></li>
+          <li><a href="privacy.html#verify">Verify a build</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Status</h3>
+        <ul>
+          <li><span class="small muted">Version 0.1.0 · pilot</span></li>
+          <li><span class="small muted">Windows 10/11 x64</span></li>
+          <li><span class="small muted">Updated <span data-year>2026</span></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year>2026</span> Agent Mark. Pilot preview — synthetic data only.</span>
+      <span>Built without AI. Verified by hand.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

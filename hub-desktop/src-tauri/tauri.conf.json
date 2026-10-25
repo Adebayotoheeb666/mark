@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Agent Mark Hub",
+  "version": "0.1.0",
+  "identifier": "org.agentmark.hub",
+  "build": {
+    "frontendDist": "../src",
+    "devUrl": "http://localhost:1420/src/index.html",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [{ "title": "Agent Mark Hub", "width": 1280, "height": 860 }]
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "publisher": "Agent Mark",
+    "copyright": "© 2026 Agent Mark. Local-first school records.",
+    "category": "Education",
+    "shortDescription": "Local-first school records and report cards. No AI, no cloud.",
+    "longDescription": "Agent Mark Hub runs entirely on the school PC: roster, scores, deterministic validation, teacher/head approval, signed report cards, encrypted backups and an audit trail. Student data never leaves the machine.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "compression": "lzma",
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico"
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      }
+    }
+  }
+}

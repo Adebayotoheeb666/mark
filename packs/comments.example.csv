@@ -1,0 +1,25 @@
+id,subject,band,trend,tone,locale,text,max_chars
+math-A-stable-enc,MATHS,A,stable,encouraging,en,{name} has been outstanding in {subject} with {score}%. Keep up the excellent work on {strength}.,210
+math-A-improving-enc,MATHS,A,improving,encouraging,en,{name} keeps improving in {subject} ({score}%). {next_step} will stretch {name} even further.,210
+math-B-stable-enc,MATHS,B,stable,encouraging,en,{name} is doing very well in {subject} ({score}%). Steady work on {strength} shows. {next_step}.,210
+math-B-improving-enc,MATHS,B,improving,encouraging,en,{name} has improved well in {subject} to {score}%. {next_step} to reach the top band.,210
+math-B-declining-firm,MATHS,B,declining,firm,en,{name} slipped slightly in {subject} ({score}%). {next_step} before the next assessment.,210
+math-C-stable-enc,MATHS,C,stable,encouraging,en,{name} is steady in {subject} ({score}%). Focus on {next_step} to lift into the next band.,210
+math-C-improving-enc,MATHS,C,improving,encouraging,en,{name} is climbing in {subject} ({score}%). {next_step} and the progress will continue.,210
+math-C-declining-firm,MATHS,C,declining,firm,en,{name} dropped in {subject} ({score}%). {next_step} is needed now to recover.,210
+math-D-stable-firm,MATHS,D,stable,firm,en,{name} is finding {subject} difficult ({score}%). {next_step} every week is required.,210
+math-D-declining-firm,MATHS,D,declining,firm,en,{name} is falling behind in {subject} ({score}%). Urgent work on {next_step} is needed.,210
+math-F-stable-formal,MATHS,F,stable,formal,en,{name} has not met the standard in {subject} ({score}%). A meeting is advised to plan {next_step}.,210
+math-F-declining-formal,MATHS,F,declining,formal,en,{name} remains below standard in {subject} ({score}%). Immediate support with {next_step} is required.,210
+eng-A-stable-enc,ENG,A,stable,encouraging,en,{name} writes and reads with excellence in {subject} ({score}%). {strength} stands out.,210
+eng-A-improving-enc,ENG,A,improving,encouraging,en,{name} keeps raising the bar in {subject} ({score}%). {next_step} will extend this further.,210
+eng-B-stable-enc,ENG,B,stable,encouraging,en,{name} is strong in {subject} ({score}%). Keep building {strength}. {next_step}.,210
+eng-B-declining-firm,ENG,B,declining,firm,en,{name} slipped in {subject} ({score}%). {next_step} before the next assessment.,210
+eng-C-stable-enc,ENG,C,stable,encouraging,en,{name} is steady in {subject} ({score}%). {next_step} will lift the next result.,210
+eng-C-improving-enc,ENG,C,improving,encouraging,en,{name} is improving in {subject} ({score}%). {next_step} to keep the momentum.,210
+eng-C-declining-firm,ENG,C,declining,firm,en,{name} dropped in {subject} ({score}%). {next_step} is needed to recover.,210
+eng-D-stable-firm,ENG,D,stable,firm,en,{name} finds {subject} difficult ({score}%). Regular work on {next_step} is required.,210
+eng-D-declining-firm,ENG,D,declining,firm,en,{name} is falling behind in {subject} ({score}%). Urgent focus on {next_step}.,210
+eng-F-stable-formal,ENG,F,stable,formal,en,{name} is below standard in {subject} ({score}%). A meeting is advised to plan {next_step}.,210
+eng-F-improving-enc,ENG,F,improving,encouraging,en,{name} shows early signs of progress in {subject} ({score}%). {next_step} will help most.,210
+eng-F-declining-formal,ENG,F,declining,formal,en,{name} remains below standard in {subject} ({score}%). Immediate support with {next_step} is required.,210

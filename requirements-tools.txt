@@ -1,0 +1,7 @@
+# Extra packages for the desktop tooling (not needed to run the app or the tests):
+#   scripts/make_icons.py        Pillow
+#   hub-desktop/tools/*.py       Pillow (icon), pefile (PE import check), websocket-client (CDP)
+-r requirements.txt
+Pillow==13.0.0
+pefile==2024.8.26
+websocket-client==1.9.2

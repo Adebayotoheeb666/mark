@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScoreBatch",
+  "type": "object",
+  "required": ["term_id", "scores"],
+  "properties": {
+    "term_id": { "type": "string" },
+    "scores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["student_short_code", "assessment_label", "value"],
+        "properties": {
+          "student_short_code": { "type": "string" },
+          "assessment_label": { "type": "string" },
+          "value": { "type": "number" }
+        }
+      }
+    }
+  }
+}

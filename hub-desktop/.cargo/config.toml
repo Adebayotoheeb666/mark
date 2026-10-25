@@ -1,0 +1,25 @@
+# Local toolchain bridge for this PC (no MSVC linker installed, MS/GitHub download
+# hosts unusably slow). Zig 0.16 in ../tools/zig provides a complete
+# x86_64-windows-gnu compiler + MinGW-w64 import libraries, so the GNU target can be
+# built with no Visual Studio at all.
+#
+# Paths are relative to this directory, so the checkout can live anywhere:
+#   * `linker` is resolved from the workspace root (build from hub-desktop/);
+#   * `[env]` uses `relative = true`, which Cargo resolves against the directory
+#     that contains .cargo/ (not the build script's working directory).
+#
+# Remove this file (and build with the default MSVC host toolchain) once Visual Studio
+# Build Tools with the C++ workload is installed; that restores a proper embedded
+# icon/manifest and the standard NSIS/MSI bundling path.
+#
+# NOTE: cargo reads config from the *current directory* upward, not from the manifest
+# directory, so this file lives at hub-desktop/.cargo/config.toml (one level above
+# src-tauri). Always build from hub-desktop (build.ps1 does).
+
+[target.x86_64-pc-windows-gnu]
+linker = "tools/bin/zigcc.exe"
+
+[env]
+CC_x86_64_pc_windows_gnu = { value = "tools/bin/zigcc.exe", relative = true }
+CXX_x86_64_pc_windows_gnu = { value = "tools/bin/zigcc.exe", relative = true }
+AR_x86_64_pc_windows_gnu = { value = "tools/bin/ar.exe", relative = true }

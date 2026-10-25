@@ -1,0 +1,46 @@
+{
+  "version": "0.1.0",
+  "channel": "pilot",
+  "released": "2026-10-25",
+  "notes": "First packaged build: per-user Windows installer, portable ZIP, and the installable mobile companion (PWA).",
+  "windows": {
+    "installer": {
+      "file": "downloads/Agent-Mark-Hub-0.1.0-x64-setup.exe",
+      "bytes": 6081397,
+      "sha256": "266AEFC8D109231BD904BEC8F1BE406220FCED2DB1C5999E509782735A31FB70",
+      "kind": "nsis",
+      "install_mode": "currentUser",
+      "requires_admin": false
+    },
+    "portable": {
+      "file": "downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip",
+      "bytes": 6054793,
+      "sha256": "BFD081B35FE74BAB395D60AE10E4A7FB11B838E7C612DDB58423C0F83EADD984",
+      "kind": "zip"
+    },
+    "minimum_os": "Windows 10 (64-bit)",
+    "architectures": [
+      "x86_64"
+    ]
+  },
+  "mobile": {
+    "type": "pwa",
+    "url": "/app/",
+    "offline": true,
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "note": "Companion preview. Data stays on the device; it does not sync with the desktop hub."
+  },
+  "data_policy": {
+    "telemetry": false,
+    "analytics": false,
+    "ai": false,
+    "network_calls_for_student_data": false
+  },
+  "pilot_gate": {
+    "real_student_data_allowed": false,
+    "reason": "External security review has not closed the open findings; no code-signing certificate yet."
+  }
+}

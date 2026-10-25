@@ -1,0 +1,10 @@
+{
+  "pack_id": "ng-secondary",
+  "version": "1.4.0",
+  "engine_min": "0.3.0",
+  "files": {
+    "grading_scales": "grading_scales.json",
+    "weights": "weights.json",
+    "checks": "checks.yaml"
+  }
+}

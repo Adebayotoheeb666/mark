@@ -1,0 +1,4 @@
+# Python reference engine + hub + relay, and their tests.
+# PyNaCl is the only third-party runtime dependency (Ed25519 signatures, sealed boxes).
+PyNaCl==1.6.2
+pytest==9.1.1

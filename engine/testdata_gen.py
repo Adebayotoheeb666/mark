@@ -1,0 +1,35 @@
+"""Golden vectors for calc engine (deterministic, hand-checked)."""
+import json, os
+
+SCALE = [
+    {"min": 70, "grade": "A"}, {"min": 60, "grade": "B"}, {"min": 50, "grade": "C"},
+    {"min": 45, "grade": "D"}, {"min": 40, "grade": "E"}, {"min": 0, "grade": "F"}
+]
+
+VECTORS = [
+    {"id": "ca40-exam60-basic", "items": [[16, 20, 20], [14, 20, 20], [45, 60, 60]],
+     "total": 75, "avg_tenths": 750, "grade": "A"},
+    {"id": "boundary-69.5-rounds-70-A", "items": [[14, 20, 20], [14, 20, 20], [41.7, 60, 60]],
+     "total_note": "float input allowed", "avg_tenths": 697, "grade": "B"},
+    {"id": "exact-70-A", "items": [[14, 20, 20], [14, 20, 20], [42, 60, 60]],
+     "total": 70, "avg_tenths": 700, "grade": "A"},
+    {"id": "fail-39.9-F", "items": [[8, 20, 20], [8, 20, 20], [23.9, 60, 60]],
+     "avg_tenths": 399, "grade": "F"},
+    {"id": "zero", "items": [[0, 20, 20], [0, 20, 20], [0, 60, 60]],
+     "total": 0, "avg_tenths": 0, "grade": "F"},
+    {"id": "perfect", "items": [[20, 20, 20], [20, 20, 20], [60, 60, 60]],
+     "total": 100, "avg_tenths": 1000, "grade": "A"},
+]
+
+RANK_VECTORS = [
+    {"mode": "competition", "avgs": [900, 800, 800, 700], "ranks": [1, 2, 2, 4]},
+    {"mode": "dense", "avgs": [900, 800, 800, 700], "ranks": [1, 2, 2, 3]},
+    {"mode": "competition", "avgs": [500, 500, 500], "ranks": [1, 1, 1]},
+]
+
+if __name__ == "__main__":
+    out = {"scale": SCALE, "vectors": VECTORS, "ranks": RANK_VECTORS}
+    p = os.path.join(os.path.dirname(__file__), "testdata", "vectors.json")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    json.dump(out, open(p, "w"), indent=2)
+    print(f"wrote {p} ({len(VECTORS)} vectors, {len(RANK_VECTORS)} rank cases)")

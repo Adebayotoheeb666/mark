@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Mark — mobile companion</title>
+<meta name="description" content="Offline score capture and report-card preview for Agent Mark. Data stays on your phone. No AI, no account, no sync.">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agent Mark">
+<link rel="stylesheet" href="app.css?v=0.1.2">
+</head>
+<body>
+
+<header class="app-bar">
+  <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1c6b3c"/><path d="M8.5 7.5h12a3 3 0 0 1 3 3v14h-12a3 3 0 0 1-3-3v-14z" fill="none" stroke="#f7f5ef" stroke-width="1.5"/><path d="M11.5 12.5h7M11.5 16h5" stroke="#f7f5ef" stroke-width="1.3" stroke-linecap="round" opacity=".5"/><circle cx="22.5" cy="23.5" r="5.2" fill="#a7d7b3"/><path d="M20.2 23.6l1.6 1.6 3-3.1" fill="none" stroke="#14532d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="titles">
+    <b>Agent Mark</b>
+    <small>Mobile companion</small>
+  </div>
+  <button id="install" class="conn" hidden style="border:0;cursor:pointer;font:inherit">Install</button>
+  <span class="conn" id="conn"><span class="dot"></span><span>offline-ready</span></span>
+</header>
+
+<main id="view" class="view" aria-live="polite"></main>
+
+<nav class="tabbar" aria-label="Sections">
+  <button data-tab="home" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    Home
+  </button>
+  <button data-tab="scores">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 16l4-6 3 3 5-8"/></svg>
+    Scores
+  </button>
+  <button data-tab="flags">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-1.5 4L16 12H5"/></svg>
+    Flags
+  </button>
+  <button data-tab="card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg>
+    Card
+  </button>
+  <button data-tab="more">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+    More
+  </button>
+</nav>
+
+<script src="app.js?v=0.1.2"></script>
+</body>
+</html>

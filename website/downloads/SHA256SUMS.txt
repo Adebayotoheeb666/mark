@@ -1,0 +1,2 @@
+266aefc8d109231bd904bec8f1be406220fced2db1c5999e509782735a31fb70  Agent-Mark-Hub-0.1.0-x64-setup.exe
+bfd081b35fe74bab395d60ae10e4a7fb11b838e7c612ddb58423c0f83eadd984  Agent-Mark-Hub-0.1.0-windows-x64-portable.zip

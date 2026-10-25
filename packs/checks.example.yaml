@@ -1,0 +1,10 @@
+checks:
+  - rule_id: VAL-JUMP-01
+    enabled: true
+    params: { jump_pts: 25 }
+  - rule_id: VAL-OUTLIER-01
+    enabled: true
+    params: { sd: 3 }
+  - rule_id: VAL-COLSWAP-01
+    enabled: true
+    params: {}

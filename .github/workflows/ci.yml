@@ -1,0 +1,61 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Reference implementation tests
+        run: python -m pytest engine hub relay app -q
+
+      - name: Validate schemas + demo fixtures
+        run: python scripts/validate_demo.py
+
+      - name: Pack sign/verify round-trip
+        run: python scripts/pack_sign_verify.py
+
+      - name: JSON parses
+        run: |
+          python - <<'PY'
+          import json
+          for f in ["schemas/pack_manifest.json", "schemas/score_batch.json",
+                    "website/version.json", "website/vercel.json",
+                    "website/app/manifest.webmanifest"]:
+              json.load(open(f, encoding="utf-8"))
+          print("json: OK")
+          PY
+
+      - name: Committed artifacts match version.json
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path("website")
+          v = json.loads((root / "version.json").read_text(encoding="utf-8"))
+          for key in ("installer", "portable"):
+              art = v["windows"][key]
+              data = (root / art["file"]).read_bytes()
+              assert len(data) == art["bytes"], f"{key}: size mismatch"
+              assert hashlib.sha256(data).hexdigest().upper() == art["sha256"], f"{key}: hash mismatch"
+          print("checksums: OK")
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Frontend syntax
+        run: |
+          node --check website/app/app.js
+          node --check website/app/sw.js
+          node --check website/assets/site.js

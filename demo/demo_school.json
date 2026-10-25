@@ -1,0 +1,20 @@
+{
+  "school": { "name": "Demo Academy (SYNTHETIC)", "locale": "en-NG", "pack_pin": "ng-secondary@1.4.0" },
+  "year": "2026/2027",
+  "term": { "term_id": "term-1t-26", "name": "First Term", "status": "active" },
+  "classes": [{ "class_id": "JSS2-A", "label": "JSS2-A" }],
+  "subjects": ["MATHS", "ENG"],
+  "assessments": {
+    "MATHS": [
+      { "label": "CA1", "max_score": 20 },
+      { "label": "CA2", "max_score": 20 },
+      { "label": "Exam", "max_score": 60 }
+    ]
+  },
+  "students": [
+    { "short_code": "26-JSS2A-001", "first_name": "Ada", "last_name": "Demo", "class_id": "JSS2-A" },
+    { "short_code": "26-JSS2A-002", "first_name": "Bola", "last_name": "Demo", "class_id": "JSS2-A" },
+    { "short_code": "26-JSS2A-003", "first_name": "Chidi", "last_name": "Demo", "class_id": "JSS2-A" }
+  ],
+  "note": "SYNTHETIC ONLY — 3-row smoke sample. Full 60-student fixture in Phase 1."
+}

@@ -1,0 +1,8 @@
+[
+  { "min": 70, "grade": "A", "label": "Excellent" },
+  { "min": 60, "grade": "B", "label": "Very Good" },
+  { "min": 50, "grade": "C", "label": "Good" },
+  { "min": 45, "grade": "D", "label": "Pass" },
+  { "min": 40, "grade": "E", "label": "Weak Pass" },
+  { "min": 0, "grade": "F", "label": "Fail" }
+]
