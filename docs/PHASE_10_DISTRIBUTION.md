@@ -199,6 +199,21 @@ as an installable APK without touching this PC:
   needs Capacitor Filesystem/Share before it is useful on Android.
 - Build/signing notes and limits: `mobile/README.md`.
 
+### CI verification (2026-10-25)
+
+Commit `c5e26cc` — all three jobs green:
+
+- `desktop-windows` (windows-latest, MSVC): NSIS + MSI built; artifact
+  `agent-mark-hub-windows` (10,052,105 B zip, both installers).
+- `android-apk` (ubuntu-latest): Capacitor 8 wrapper of `website/app`, `assembleDebug` succeeded;
+  artifact `agent-mark-mobile-apk` (3,813,956 B zip, contains `app-debug.apk`).
+- `smoke`: reference tests, schema/demo validation, pack round-trip, committed-artifact hashes and
+  frontend syntax.
+
+Actions artifacts expire after 90 days and require a GitHub sign-in to download. The APK is
+debug-signed; for a durable public link, attach it to a tagged GitHub Release or add keystore
+secrets plus a release signing block (see `mobile/README.md`).
+
 ---
 
 ## 4. Release procedure

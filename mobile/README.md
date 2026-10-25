@@ -20,8 +20,14 @@ The `android-apk` job in `.github/workflows/ci.yml` builds `app-debug.apk` and u
 3. `npx cap add android` + `npx cap sync android`
 4. `./gradlew assembleDebug`
 
-Download the artifact from the workflow run; it is installable on Android 8+ with "Install unknown
-apps" allowed.
+Download the artifact from the workflow run (GitHub sign-in required; artifacts expire after 90
+days). The first verified run is
+[40187821163](https://github.com/Adebayotoheeb666/mark/actions/runs/40187821163). It is installable
+on Android 8+ with "Install unknown apps" allowed. For a durable public link, attach the APK to a
+tagged GitHub Release.
+
+CI uses the runner's preinstalled Android SDK 36 and `actions/setup-java@v5` (Temurin 21); no
+third-party Android setup action is needed.
 
 ## Build locally
 
@@ -52,4 +58,6 @@ release build, add a keystore to GitHub Secrets and a `signingConfigs` block to 
 - Blob downloads (`a.download`) may not work in a bare WebView; exporting the JSON needs
   `@capacitor/filesystem` + `@capacitor/share` (not wired yet).
 - The wrapper is the PWA, not the Rust hub: no roster sync, no Ed25519 signing, no backup/audit.
+- The generated project uses Capacitor's default launcher icon and splash; custom Agent Mark
+  icons are a follow-up.
 - The PWA cache version is still manual (`website/app/sw.js`); bump it when the shell changes.
