@@ -19,12 +19,18 @@ The `android-apk` job in `.github/workflows/ci.yml` builds `app-debug.apk` and u
 2. `npm run sync-web` — copies `website/app/` to `www/` (the PWA stays the single source of truth)
 3. `npx cap add android` + `npx cap sync android`
 4. `./gradlew assembleDebug`
+5. On a `v*` tag, `gh release create` attaches the APK to a public prerelease.
 
-Download the artifact from the workflow run (GitHub sign-in required; artifacts expire after 90
-days). The first verified run is
+Download the Actions artifact from the workflow run (GitHub sign-in required; artifacts expire
+after 90 days). The first verified run is
 [40187821163](https://github.com/Adebayotoheeb666/mark/actions/runs/40187821163). It is installable
-on Android 8+ with "Install unknown apps" allowed. For a durable public link, attach the APK to a
-tagged GitHub Release.
+on Android 7+ with "Install unknown apps" allowed.
+
+Tagged releases publish the same APK publicly as
+`Agent-Mark-Mobile-<version>-debug.apk`; release assets do **not** require a GitHub login. `v0.1.0`
+is at [releases/tag/v0.1.0](https://github.com/Adebayotoheeb666/mark/releases/tag/v0.1.0), asset
+SHA-256 `2ca12fcd059fe6829bfbe8c05e11de6730897ec97b3c60b78ba801ea4b354780`. The website's download
+page links directly to that asset.
 
 CI uses the runner's preinstalled Android SDK 36 and `actions/setup-java@v5` (Temurin 21); no
 third-party Android setup action is needed.

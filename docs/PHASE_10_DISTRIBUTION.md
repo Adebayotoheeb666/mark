@@ -210,9 +210,18 @@ Commit `c5e26cc` — all three jobs green:
 - `smoke`: reference tests, schema/demo validation, pack round-trip, committed-artifact hashes and
   frontend syntax.
 
-Actions artifacts expire after 90 days and require a GitHub sign-in to download. The APK is
-debug-signed; for a durable public link, attach it to a tagged GitHub Release or add keystore
-secrets plus a release signing block (see `mobile/README.md`).
+Actions artifacts expire after 90 days and require a GitHub sign-in to download. A tag push
+(`v*`) also runs the same job and publishes the APK as a **public GitHub Release** asset via
+`gh release create`; the `v0.1.0` run (40188704454) is green:
+
+- Release: `https://github.com/Adebayotoheeb666/mark/releases/tag/v0.1.0` (prerelease)
+- Asset: `Agent-Mark-Mobile-0.1.0-debug.apk` — 4,177,516 B,
+  SHA-256 `2CA12FCD059FE6829BFBE8C05E11DE6730897EC97B3C60B78BA801EA4B354780`
+- Direct download: `https://github.com/Adebayotoheeb666/mark/releases/download/v0.1.0/Agent-Mark-Mobile-0.1.0-debug.apk`
+
+The asset is public (no GitHub login), unlike Actions artifacts. The download page links to it and
+to the release notes for the checksum. The APK is still debug-signed; for a release-signed build,
+add keystore secrets plus a release signing block (see `mobile/README.md`).
 
 ---
 

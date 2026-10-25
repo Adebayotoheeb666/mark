@@ -59,6 +59,11 @@ Details: `docs/PHASE_10_DISTRIBUTION.md` and `website/README.md`.
 (`release.cmd` is a wrapper around `release.ps1` with `-ExecutionPolicy Bypass`; this PC refuses to
 run `.ps1` files directly.)
 
+The Android APK is built by `.github/workflows/ci.yml` on `ubuntu-latest`. Pushing a `v*` tag
+(e.g. `git tag v0.1.0 && git push origin v0.1.0`) attaches
+`Agent-Mark-Mobile-<version>-debug.apk` to a public GitHub Release; `website/download.html` links
+to it. It is a debug-signed preview of the offline PWA, not the Rust hub.
+
 The Tauri CLI is installed globally (`npm i -g @tauri-apps/cli`, v2.12.4) so other Tauri projects on
 this PC can run `tauri` without a local `node_modules`. PowerShell's execution policy blocks the
 `tauri.ps1` shim; call **`tauri.cmd`** instead, or set

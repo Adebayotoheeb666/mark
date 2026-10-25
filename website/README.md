@@ -72,10 +72,14 @@ checksums always describe the published files.
 | `404.html` | Not-found page (Vercel serves it automatically) |
 | `app/` | Installable mobile companion (PWA), its manifest and service worker |
 | `assets/` | Shared CSS/JS, logo, OG image, real screenshots captured from the app |
-| `downloads/` | Windows artifacts + `SHA256SUMS.txt` |
+| `downloads/` | Windows artifacts + `SHA256SUMS.txt` (the APK is a GitHub Release asset) |
 | `version.json` | Release manifest read by the download page |
 | `vercel.json` | Headers/caching/CSP |
 | `robots.txt`, `sitemap.xml` | Indexing hints |
+
+The Android APK is **not** committed to `downloads/`. Tagged releases publish it as a public
+GitHub Release asset (`v0.1.0`); `download.html` links directly to that asset, so visitors do not
+need a GitHub login.
 
 ## Local check
 
