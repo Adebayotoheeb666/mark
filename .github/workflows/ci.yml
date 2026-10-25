@@ -65,6 +65,9 @@ jobs:
     # uses the GNU + Zig bridge in .cargo/config.toml; that section is ignored here
     # because the runner's host target is x86_64-pc-windows-msvc.
     runs-on: windows-latest
+    env:
+      AGM_WINDOWS_PFX_BASE64: ${{ secrets.AGM_WINDOWS_PFX_BASE64 }}
+      AGM_WINDOWS_PFX_PASSWORD: ${{ secrets.AGM_WINDOWS_PFX_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -84,9 +87,30 @@ jobs:
         working-directory: hub-desktop
         run: npm ci
 
+      - name: Rust tests
+        working-directory: hub-desktop/src-tauri
+        run: cargo test
+
       - name: Build NSIS + MSI
         working-directory: hub-desktop
         run: npx tauri build --bundles nsis,msi
+
+      - name: Sign Windows installers (optional)
+        if: env.AGM_WINDOWS_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) { throw "signtool.exe not found" }
+          $pfx = Join-Path $env:RUNNER_TEMP "agentmark-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:AGM_WINDOWS_PFX_BASE64))
+          Get-ChildItem hub-desktop/src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi |
+            ForEach-Object {
+              & $signtool.FullName sign /fd SHA256 /f $pfx /p $env:AGM_WINDOWS_PFX_PASSWORD `
+                /tr http://timestamp.digicert.com /td SHA256 $_.FullName
+              if ($LASTEXITCODE -ne 0) { throw "Signing failed: $($_.FullName)" }
+            }
+          Remove-Item $pfx -Force
 
       - name: Upload Windows installers
         uses: actions/upload-artifact@v4
@@ -103,6 +127,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # needed only for the tag-triggered GitHub Release below
+    env:
+      AGM_ANDROID_KEYSTORE_BASE64: ${{ secrets.AGM_ANDROID_KEYSTORE_BASE64 }}
+      AGM_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.AGM_ANDROID_KEYSTORE_PASSWORD }}
+      AGM_ANDROID_KEY_ALIAS: ${{ secrets.AGM_ANDROID_KEY_ALIAS }}
+      AGM_ANDROID_KEY_PASSWORD: ${{ secrets.AGM_ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -141,37 +170,73 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
+      - name: Configure release signing
+        if: env.AGM_ANDROID_KEYSTORE_BASE64 != ''
+        working-directory: mobile
+        run: |
+          printf '%s' "$AGM_ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          node scripts/configure-android-signing.js
+
       - name: Build debug APK
         working-directory: mobile/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Build release APK (signed)
+        if: env.AGM_ANDROID_KEYSTORE_BASE64 != ''
+        working-directory: mobile/android
+        env:
+          AGM_KEYSTORE_PATH: release.keystore
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Stage APK
+        id: stage
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.0.0-${GITHUB_SHA::7}"
+          fi
+          if [ -f mobile/android/app/build/outputs/apk/release/app-release.apk ]; then
+            ASSET="Agent-Mark-Mobile-${VERSION}.apk"
+            cp mobile/android/app/build/outputs/apk/release/app-release.apk "$ASSET"
+            SIGNED="release-signed"
+          else
+            ASSET="Agent-Mark-Mobile-${VERSION}-debug.apk"
+            cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "$ASSET"
+            SIGNED="debug-signed preview"
+          fi
+          SHA="$(sha256sum "$ASSET" | awk '{print $1}')"
+          echo "$SHA" > apk.sha256
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "signed=$SIGNED" >> "$GITHUB_OUTPUT"
+          ls -lh "$ASSET"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: agent-mark-mobile-apk
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ steps.stage.outputs.asset }}
           if-no-files-found: error
 
-      - name: Stage APK for release
+      - name: Write release notes
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          ASSET="Agent-Mark-Mobile-${VERSION}-debug.apk"
-          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "$ASSET"
-          SHA="$(sha256sum "$ASSET" | awk '{print $1}')"
-          echo "$SHA" > apk.sha256
           cat > release-notes.md <<EOF
-          Agent Mark mobile companion ${GITHUB_REF_NAME} - **debug-signed APK preview**.
+          Agent Mark mobile companion ${GITHUB_REF_NAME} - **${{ steps.stage.outputs.signed }} APK**.
 
           This is the offline PWA companion wrapped with Capacitor, not the Rust hub.
 
-          - Data stays in the phone's localStorage; no hub sync, no signing, no audit.
-          - Printing and JSON export are limited in the Android WebView.
+          - Passcode + AES-256-GCM encrypted local store, auto-lock, and encrypted `.agmm` transfer.
+          - No cloud relay, no always-on sync, no telemetry. Real-data mode is gated in the app.
+          - Printing is a desktop-hub feature. Import the `.agmm` file into the desktop hub.
           - Install with "Install unknown apps" allowed. Android 7+.
           - Source: https://github.com/Adebayotoheeb666/mark/tree/${GITHUB_REF_NAME}/mobile
-          - SHA-256: ${SHA}
+          - SHA-256: ${{ steps.stage.outputs.sha }}
           EOF
           cat release-notes.md
 
@@ -179,14 +244,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ steps.stage.outputs.asset }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          ASSET="Agent-Mark-Mobile-${VERSION}-debug.apk"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "$ASSET" \
-              --title "Agent Mark ${VERSION} - mobile APK (pilot)" \
+              --title "Agent Mark ${GITHUB_REF_NAME#v} - mobile APK (pilot)" \
               --notes-file release-notes.md \
               --prerelease
           fi

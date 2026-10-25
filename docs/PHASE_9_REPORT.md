@@ -1,4 +1,8 @@
 # Phase 9 Report — Desktop Hub Console (Tauri v2)
+
+> **Historical record.** Superseded by Hub 0.2.0 and `docs/REAL_DATA_READINESS.md`. The 0.1.0 build
+> described below had no login, plaintext SQLite, and summary backups; those gaps are closed in 0.2.0.
+
 **Date:** 2026-10-25 | **Strategy:** Plan → Build → Test → Document → Repeat | **Result:** E2E PASS on an isolated database; release build produced. PII gate unchanged.
 
 ## Plan (done)

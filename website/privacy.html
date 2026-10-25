@@ -48,8 +48,8 @@
 
     <h2>What the desktop app stores</h2>
     <p>Everything sits in one folder on the machine where you installed it:</p>
-    <div class="hash">%APPDATA%\org.agentmark.hub\agent-mark-hub\<br>  hub.db            SQLite database (roster, scores, flags, comments, reports, audit)<br>  backups\          encrypted backup blobs and their manifests</div>
-    <p style="margin-top:.8rem">The database holds student names, class codes, scores, teacher comments, approvals, report payloads, and the school's signing key. It is protected by your Windows account, not by a separate password — which is why the pilot runs on a single staffroom PC.</p>
+    <div class="hash">%APPDATA%\org.agentmark.hub\agent-mark-hub\<br>  hub.db            encrypted vault (AGMDB001), not a readable SQLite file<br>  vault.json        staff accounts + Argon2id-wrapped copies of the data key<br>  backups\          full encrypted snapshots + signed manifests</div>
+    <p style="margin-top:.8rem">The vault holds student names, class codes, scores, teacher comments, approvals, report payloads, and the school's signing key. It is encrypted at rest with XChaCha20-Poly1305. The random 256-bit data key is never written in plaintext: each staff account gets its own Argon2id-wrapped copy, and the printed recovery code gets another. The app locks after 15 minutes of inactivity or when you press Lock.</p>
 
     <h2>What leaves the device</h2>
     <p><strong>Nothing.</strong> The application contains no HTTP client for student data, no relay account, no licence check and no crash reporting. You can unplug the network cable and every feature still works.</p>
@@ -63,44 +63,44 @@
     <p>There is no model, no inference, no training set, no prompt and no API key. Comments come from a reviewed bank of sentences that a teacher chooses and edits. Averages are weighted arithmetic; grade bands are fixed thresholds; ranking is competition rank. Given the same scores, the same card comes out in ten years' time.</p>
 
     <h2>Backups are sealed</h2>
-    <p>Backups are encrypted with XChaCha20-Poly1305 and accompanied by a manifest of counts and a database hash. A restore drill decrypts the blob, re-hashes it and compares — the drill must pass before the term can go live.</p>
-    <p class="small muted">Honest limitation: the encryption key is stored in the same local database. That protects a backup file that leaks on its own; it does not protect against someone who has the whole data folder. Passphrase-wrapped and split-custody keys are on the roadmap, not in this build.</p>
+    <p>A backup is a full snapshot of the encrypted database, sealed with XChaCha20-Poly1305 and accompanied by a manifest containing the schema version, row counts, SHA-256, timestamp, and an Ed25519 signature. A restore drill decrypts the blob into a fresh in-memory database and compares the counts, digest and audit head — the drill must pass before real data can be enabled.</p>
+    <p class="small muted">Honest limitation: while the app is unlocked, anyone at that Windows session can read the records. The protection is the lock screen, the staff account password, and the encrypted-at-rest vault — not a hardware token. A stolen whole folder is ciphertext plus password-wrapped keys, so the attacker must attack Argon2id; keep the recovery code offline and use a strong passphrase.</p>
 
     <h2>Signatures and audit</h2>
-    <p>Locking a report re-hashes the exact payload and signs it with Ed25519. The signature is returned as <code>AGM1:&lt;report-id&gt;:&lt;sha256&gt;:&lt;signature&gt;</code> so it can travel with a printed card as a QR code later. Every action appends a row to an audit log where each row hashes the previous one; altering history breaks the chain.</p>
+    <p>Locking a report re-hashes the exact payload and signs it with Ed25519. The signature is returned as <code>AGM1:&lt;report-id&gt;:&lt;sha256&gt;:&lt;signature&gt;</code> so it can travel with a printed card as a QR code later. The signing key lives inside the encrypted vault. Every action appends a row to an audit log where each row hashes the previous one; altering history breaks the chain.</p>
 
     <h2 id="verify">Verify a build yourself</h2>
     <p>Two independent checks ship with the project — neither trusts the app's own UI.</p>
     <h3>1. Check the download</h3>
-    <div class="hash">Get-FileHash .\Agent-Mark-Hub-0.1.0-x64-setup.exe -Algorithm SHA256</div>
+    <div class="hash">Get-FileHash .\Agent-Mark-Hub-0.2.0-x64-setup.exe -Algorithm SHA256</div>
     <p style="margin-top:.6rem">Compare with the value on the <a href="download.html#checksums">download page</a>.</p>
-    <h3>2. Check a database</h3>
-    <p>The offline checker re-computes the audit chain, verifies the Ed25519 signature of every locked report, and greps backup blobs for plaintext student data:</p>
-    <div class="hash">python tools\verify_db.py "%APPDATA%\org.agentmark.hub\agent-mark-hub\hub.db"</div>
-    <p class="small muted" style="margin-top:.6rem">Expected output ends with <code>RESULT: PASS</code>. It opens the database read-only.</p>
+    <h3>2. Check the vault, audit, reports and backups</h3>
+    <p>The offline checker opens the encrypted vault with a staff password, re-computes the audit chain, verifies the Ed25519 signature of every locked report, and verifies every backup manifest, signature, decryption, row count and audit head:</p>
+    <div class="hash">python hub-desktop\tools\verify_db.py "%APPDATA%\org.agentmark.hub\agent-mark-hub" --user admin</div>
+    <p class="small muted" style="margin-top:.6rem">It prompts for the password. Expected output ends with <code>RESULT: PASS</code>. The live database is opened read-only; the decrypted snapshot exists only in memory.</p>
 
     <h2 id="gate">The pilot gate</h2>
     <div class="callout">
-      <strong>Real student data is not allowed yet.</strong> This is a pilot build for evaluation with synthetic data. An external security review must close the findings below, and the pilot charter and parent notice must be signed, before a school enters a real name.
+      <strong>Real student data is not allowed yet.</strong> The desktop and mobile technical core is implemented, but an independent security review must close the findings below, and the school authorization, DPA/DPIA and parent notice must be signed, before a school enters a real name.
     </div>
     <p>Open items, stated plainly:</p>
     <ul>
-      <li><strong>No lock screen.</strong> Roles (teacher, head) are asserted by whoever uses the app. That is acceptable for one trusted staffroom PC; it is not acceptable for multi-staff use.</li>
-      <li><strong>The signing key is not passphrase-protected.</strong> It is generated locally and never leaves the machine, but it is not yet wrapped or split between custodians.</li>
-      <li><strong>Backups are a summary payload</strong>, not yet a full encrypted table dump with a restore-into-fresh-database routine.</li>
-      <li><strong>No code signing certificate</strong> on the installer, so Windows SmartScreen warns on first run.</li>
-      <li><strong>No installer for managed deployment</strong> (MSI/GPO) yet.</li>
+      <li><strong>No independent security review yet.</strong> The engineering tests are green; that is not the same as an audit.</li>
+      <li><strong>No code-signing certificate</strong> on the Windows installers, so SmartScreen warns on first run.</li>
+      <li><strong>The published APK is debug-signed.</strong> CI has a release-signing path once a keystore is configured, but that keystore is not yet held.</li>
+      <li><strong>Retention, data-subject export/correction/erasure, and offboarding wipe</strong> are documented as requirements but not yet implemented and tested.</li>
+      <li><strong>The school/legal pack</strong> (authorization, DPIA, DPA, notices, training) is not signed.</li>
     </ul>
-    <p>The threat model, the test strategy and the backup/restore runbook are maintained in the project repository alongside the source.</p>
+    <p>The threat model, the test strategy and the backup/restore runbook are maintained in the project repository alongside the source. The detailed gate is in <code>docs/REAL_DATA_READINESS.md</code>.</p>
 
     <h2>Mobile app</h2>
-    <p>The <a href="app/">mobile app</a> is a separate, deliberately limited companion. It stores its demo data in the phone's browser storage. It has no account, no sync and no way to reach the school PC. Clearing the site data or removing the home-screen icon removes its data.</p>
+    <p>The <a href="app/">mobile app</a> is a separate, deliberately limited companion. It creates a passcode-protected AES-256-GCM store on the phone, locks after 5 minutes, and can export an encrypted <code>.agmm</code> file for import into the desktop hub. The transfer file uses a separate 12+ character passphrase; there is no cloud relay and no always-on sync. Losing the passcode loses the phone data, so keep an encrypted export. "Wipe this phone" destroys the local store.</p>
 
     <h2>Who is responsible</h2>
     <p>The school remains the data controller. Agent Mark is software installed on the school's own equipment; it does not operate a service that receives student records. Questions about a specific deployment should go to the school's data protection lead.</p>
 
     <hr>
-    <p class="small muted">Last updated October 2026 · version 0.1.0</p>
+    <p class="small muted">Last updated October 2026 · version 0.2.0</p>
   </div>
 </section>
 </main>
@@ -135,7 +135,7 @@
       <div>
         <h3>Status</h3>
         <ul>
-          <li><span class="small muted">Version 0.1.0 · pilot</span></li>
+          <li><span class="small muted">Version 0.2.0 · pilot</span></li>
           <li><span class="small muted">Windows 10/11 x64</span></li>
           <li><span class="small muted">Updated <span data-year>2026</span></span></li>
         </ul>

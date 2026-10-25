@@ -8,6 +8,9 @@ Local-first school records & report-card system (No-AI).
 - `Agent_Mark_TECH_DESIGN.md`, `Agent_Mark_DECISIONS.md`, `Agent_Mark_DATA_MODEL_RULES_SPEC.md`
 - `Agent_Mark_THREAT_MODEL_PRIVACY.md`, `Agent_Mark_TEST_STRATEGY.md`
 - `Agent_Mark_BACKUP_RESTORE_RUNBOOK.md`, `Agent_Mark_PILOT_CHARTER.md`, `Agent_Mark_AUDITOR_SOW.md`, `Agent_Mark_PARENT_NOTICE_CONSENT.md`
+- `docs/REAL_DATA_READINESS.md` — **hard gate for the first real-student pilot.** The desktop technical
+  core (accounts, encrypted vault, backup/drill/restore, mobile transfer) is implemented and tested;
+  signing, independent review, and school/legal gates remain open, so real PII is still blocked.
 
 ## Layout
 ```
@@ -45,7 +48,7 @@ python -m pip install --target tools/zig ziglang==0.16.0   # build toolchain (no
 .\build.ps1
 ```
 Build output (`src-tauri/target`), `node_modules`, the 347 MB Zig toolchain and generated demo
-data (`demo/output`: databases, backups, the demo key) are gitignored. The two release binaries
+data (`demo/output`: databases, backups, the demo key) are gitignored. The three release binaries
 in `website/downloads/` **are** committed on purpose — Vercel serves them directly.
 
 ## Ship a release
@@ -60,9 +63,22 @@ Details: `docs/PHASE_10_DISTRIBUTION.md` and `website/README.md`.
 run `.ps1` files directly.)
 
 The Android APK is built by `.github/workflows/ci.yml` on `ubuntu-latest`. Pushing a `v*` tag
-(e.g. `git tag v0.1.0 && git push origin v0.1.0`) attaches
-`Agent-Mark-Mobile-<version>-debug.apk` to a public GitHub Release; `website/download.html` links
-to it. It is a debug-signed preview of the offline PWA, not the Rust hub.
+(e.g. `git tag v0.2.0 && git push origin v0.2.0`) attaches the APK to a public GitHub Release;
+`website/download.html` links to it. Without keystore secrets the APK is debug-signed and is a
+preview only. With `AGM_ANDROID_KEYSTORE_BASE64` and its password/alias secrets configured, CI
+builds a release-signed APK instead; see `mobile/README.md`.
+
+## Tests
+```powershell
+cd hub-desktop\src-tauri; cargo test                 # 14 crypto/backup/mobile-format tests
+cd hub-desktop; python tools\e2e_smoke.py 9223       # auth, roles, gate, backup/drill/recover, mobile import
+cd hub-desktop; python tools\ui_smoke.py 9224        # real WebView setup/login/lock/auto-lock
+cd hub-desktop; python tools\recover_smoke.py 9225   # missing hub.db/vault.json/.bak -> restore from backup kit
+cd ..; python hub-desktop\tools\verify_db.py "%APPDATA%\org.agentmark.hub\agent-mark-hub" --user admin
+```
+The last command is the offline auditor check: it opens the encrypted vault read-only, re-computes
+the audit chain, verifies every locked report signature, and verifies every backup manifest,
+signature, decryption, counts, audit head, and plaintext-leak check.
 
 The Tauri CLI is installed globally (`npm i -g @tauri-apps/cli`, v2.12.4) so other Tauri projects on
 this PC can run `tauri` without a local `node_modules`. PowerShell's execution policy blocks the

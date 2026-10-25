@@ -37,7 +37,7 @@
 <main>
 <section style="padding-bottom:1rem">
   <div class="wrap">
-    <span class="eyebrow">Version 0.1.0 · pilot preview</span>
+    <span class="eyebrow">Version 0.2.0 · pilot preview</span>
     <h1 style="max-width:18em">Download Agent Mark</h1>
     <p class="lede">Installers for Windows. Nothing to configure, no account, no internet connection required after install. Use synthetic data until the security review closes.</p>
   </div>
@@ -57,18 +57,18 @@
       </div>
       <p class="small" style="color:var(--ink-2)">Installs for the current user — <strong>no administrator password</strong>. Creates a Start-menu shortcut and a normal uninstaller. The WebView2 bootstrapper is bundled in case the PC has never run Edge.</p>
       <div class="dl-size">
-        <span class="pill" id="size-setup">5.79 MB</span>
+        <span class="pill" id="size-setup">5.92 MB</span>
         <span class="pill">.exe</span>
         <span class="pill">no admin</span>
         <span class="pill">offline after install</span>
       </div>
-      <a class="btn btn-primary" href="downloads/Agent-Mark-Hub-0.1.0-x64-setup.exe" download>
+      <a class="btn btn-primary" href="downloads/Agent-Mark-Hub-0.2.0-x64-setup.exe" download>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
         Download installer
       </a>
-      <div class="hash">SHA-256<br><span id="h-setup" style="user-select:all">CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08</span></div>
+      <div class="hash">SHA-256<br><span id="h-setup" style="user-select:all">10333E64F00068009B4BB6E23FCD5DE87918DFCEEC3C5C7AB4296FE7868D430D</span></div>
       <div class="dl-alt">
-        <button class="btn btn-ghost btn-sm" id="copy-setup" style="align-self:flex-start" data-copy="CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08">Copy checksum</button>
+        <button class="btn btn-ghost btn-sm" id="copy-setup" style="align-self:flex-start" data-copy="10333E64F00068009B4BB6E23FCD5DE87918DFCEEC3C5C7AB4296FE7868D430D">Copy checksum</button>
         <a href="install.html">Installation guide →</a>
       </div>
     </div>
@@ -83,10 +83,10 @@
           </div>
         </div>
         <p class="small" style="color:var(--ink-2);margin-bottom:.6rem">Unzip anywhere and double-click <code>agent-mark-hub.exe</code>. Keep <code>WebView2Loader.dll</code> beside it.</p>
-        <div class="dl-size"><span class="pill" id="size-portable">5.77 MB</span><span class="pill">.zip</span></div>
-        <a class="btn btn-ghost" href="downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip" download>Download portable</a>
-        <div class="hash" style="margin-top:.8rem">SHA-256<br><span id="h-portable" style="user-select:all">D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB</span></div>
-        <button class="btn btn-ghost btn-sm" id="copy-portable" style="margin-top:.6rem" data-copy="D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB">Copy checksum</button>
+        <div class="dl-size"><span class="pill" id="size-portable">11.73 MB</span><span class="pill">.zip</span></div>
+        <a class="btn btn-ghost" href="downloads/Agent-Mark-Hub-0.2.0-windows-x64-portable.zip" download>Download portable</a>
+        <div class="hash" style="margin-top:.8rem">SHA-256<br><span id="h-portable" style="user-select:all">5FE13828787F09BBE52AA29020D316DF54782DBA790F7140568D629E25E46D17</span></div>
+        <button class="btn btn-ghost btn-sm" id="copy-portable" style="margin-top:.6rem" data-copy="5FE13828787F09BBE52AA29020D316DF54782DBA790F7140568D629E25E46D17">Copy checksum</button>
       </div>
 
       <div class="dl-card">
@@ -97,13 +97,13 @@
             <p>Android &amp; iPhone · installable, offline</p>
           </div>
         </div>
-        <p class="small" style="color:var(--ink-2);margin-bottom:.6rem">Opens in the phone browser and installs to the home screen. A companion preview: capture scores, check flags, preview a card. Data stays on the phone.</p>
+        <p class="small" style="color:var(--ink-2);margin-bottom:.6rem">Opens in the phone browser and installs to the home screen. An encrypted companion: passcode, encrypted local store, auto-lock, and an encrypted <code>.agmm</code> transfer to the desktop hub.</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <a class="btn btn-ghost" href="app/">Open mobile app</a>
-          <a class="btn btn-ghost" href="https://github.com/Adebayotoheeb666/mark/releases/download/v0.1.0/Agent-Mark-Mobile-0.1.0-debug.apk">Android APK (preview)</a>
+          <a class="btn btn-ghost" href="https://github.com/Adebayotoheeb666/mark/releases/download/v0.1.0/Agent-Mark-Mobile-0.1.0-debug.apk">Android APK 0.1.0 (old preview)</a>
         </div>
         <p class="tiny muted" style="margin:.7rem 0 0">iPhone: Share → <em>Add to Home Screen</em>. Android: menu → <em>Install app</em>.</p>
-        <p class="tiny muted" style="margin:.45rem 0 0">The APK is a debug-signed preview of the same offline companion: no hub sync, and printing/export are limited. SHA-256 is in the <a href="https://github.com/Adebayotoheeb666/mark/releases/tag/v0.1.0">release notes</a>.</p>
+        <p class="tiny muted" style="margin:.45rem 0 0">The 0.1.0 APK predates the encrypted mobile store: it is a synthetic-data-only preview. Use the installable <a href="app/">PWA companion</a> for the current 0.2.0 app. A 0.2.0 APK is published by CI when the <code>v0.2.0</code> tag is pushed. SHA-256 for the old APK is in the <a href="https://github.com/Adebayotoheeb666/mark/releases/tag/v0.1.0">v0.1.0 release notes</a>.</p>
       </div>
     </div>
   </div>
@@ -123,15 +123,15 @@
           <p>Per-machine · Windows 10/11 · 64-bit</p>
         </div>
       </div>
-      <p class="small" style="color:var(--ink-2)">Silent install: <code>msiexec /i Agent-Mark-Hub-0.1.0-x64.msi /qn</code>. For a single teacher's PC, the per-user .exe above is simpler and needs no admin.</p>
+      <p class="small" style="color:var(--ink-2)">Silent install: <code>msiexec /i Agent-Mark-Hub-0.2.0-x64.msi /qn</code>. For a single teacher's PC, the per-user .exe above is simpler and needs no admin.</p>
       <div class="dl-size">
-        <span class="pill" id="size-msi">7.86 MB</span>
+        <span class="pill" id="size-msi">8.05 MB</span>
         <span class="pill">.msi</span>
         <span class="pill">admin required</span>
       </div>
-      <a class="btn btn-primary" href="downloads/Agent-Mark-Hub-0.1.0-x64.msi" download>Download MSI</a>
-      <div class="hash">SHA-256<br><span id="h-msi" style="user-select:all">7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939</span></div>
-      <button class="btn btn-ghost btn-sm" id="copy-msi" style="margin-top:.6rem" data-copy="7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939">Copy checksum</button>
+      <a class="btn btn-primary" href="downloads/Agent-Mark-Hub-0.2.0-x64.msi" download>Download MSI</a>
+      <div class="hash">SHA-256<br><span id="h-msi" style="user-select:all">D3765C89B8972B6360C86EBE2439D3D4AFD46FDD79D783E75568E939813618CD</span></div>
+      <button class="btn btn-ghost btn-sm" id="copy-msi" style="margin-top:.6rem" data-copy="D3765C89B8972B6360C86EBE2439D3D4AFD46FDD79D783E75568E939813618CD">Copy checksum</button>
     </div>
   </div>
 </section>
@@ -154,19 +154,19 @@
         </thead>
         <tbody>
           <tr style="border-top:1px solid var(--line)">
-            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-x64-setup.exe</td>
-            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-setup">5.79 MB</td>
-            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-setup">CE90D417…3B9C08</td>
+            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.2.0-x64-setup.exe</td>
+            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-setup">5.92 MB</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-setup">10333E64…8D430D</td>
           </tr>
           <tr style="border-top:1px solid var(--line)">
-            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-x64.msi</td>
-            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-msi">7.86 MB</td>
-            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-msi">7CD63316…03B939</td>
+            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.2.0-x64.msi</td>
+            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-msi">8.05 MB</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-msi">D3765C89…3618CD</td>
           </tr>
           <tr style="border-top:1px solid var(--line)">
-            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-windows-x64-portable.zip</td>
-            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-portable">5.77 MB</td>
-            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-portable">D46F3F58…7506CB</td>
+            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.2.0-windows-x64-portable.zip</td>
+            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-portable">11.73 MB</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-portable">5FE13828…E46D17</td>
           </tr>
         </tbody>
       </table>
@@ -176,7 +176,7 @@
       <div class="card">
         <h3>Check on Windows</h3>
         <p class="small" style="color:var(--ink-2)">In PowerShell, in the download folder:</p>
-        <div class="hash" style="margin-top:0">Get-FileHash .\Agent-Mark-Hub-0.1.0-x64-setup.exe -Algorithm SHA256</div>
+        <div class="hash" style="margin-top:0">Get-FileHash .\Agent-Mark-Hub-0.2.0-x64-setup.exe -Algorithm SHA256</div>
         <p class="tiny muted" style="margin:.6rem 0 0">The hash must match exactly. If it does not, delete the file and download again.</p>
       </div>
       <div class="card">
@@ -205,10 +205,10 @@
       <div>
         <h2>What is in the box</h2>
         <ul style="color:var(--ink-2);font-size:.94rem">
-          <li>The full offline hub: roster, scores, flags, comments, reports, backup, audit</li>
+          <li>The full offline hub: staff accounts, roster, scores, flags, comments, reports, backup, audit</li>
           <li>Six synthetic demo students to explore with</li>
-          <li>Ed25519 signing key generated on first run, stored locally</li>
-          <li>No account, no licence server, no telemetry</li>
+          <li>Encrypted-at-rest vault; Ed25519 signing key inside it</li>
+          <li>No cloud account, no licence server, no telemetry</li>
           <li>Uninstaller that removes the program (your data folder is left for you to delete)</li>
         </ul>
       </div>
@@ -250,7 +250,7 @@
       <div>
         <h3>Status</h3>
         <ul>
-          <li><span class="small muted">Version 0.1.0 · pilot</span></li>
+          <li><span class="small muted">Version 0.2.0 · pilot</span></li>
           <li><span class="small muted">Windows 10/11 x64</span></li>
           <li><span class="small muted">Updated <span data-year>2026</span></span></li>
         </ul>

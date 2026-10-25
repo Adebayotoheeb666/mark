@@ -1,4 +1,6 @@
 # Python reference engine + hub + relay, and their tests.
-# PyNaCl is the only third-party runtime dependency (Ed25519 signatures, sealed boxes).
+# PyNaCl is used for Ed25519 signatures, sealed boxes, and the XChaCha20-Poly1305
+# vault check. argon2-cffi is used only by the offline encrypted-database verifier.
 PyNaCl==1.6.2
+argon2-cffi==25.1.0
 pytest==9.1.1

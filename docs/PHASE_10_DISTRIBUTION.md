@@ -1,5 +1,9 @@
 # Phase 10 — Distribution: desktop installer, mobile app, Vercel site
 
+> **Historical record (0.1.0).** Superseded by Hub 0.2.0 and `docs/REAL_DATA_READINESS.md`. The
+> current build has local accounts, an encrypted vault, full backup/restore/drill, and an encrypted
+> mobile transfer. The 0.1.0 APK is a synthetic-data-only preview.
+
 Status: **built and verified on this machine** (Windows 11, GNU Rust toolchain + Zig shims).
 Date: 2026-10-25 · Version: **0.1.0 (pilot)**
 

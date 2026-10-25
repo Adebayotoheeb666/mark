@@ -30,6 +30,16 @@ def digest(path: Path) -> tuple[int, str]:
     return path.stat().st_size, h.hexdigest()
 
 
+def sync_version_text(manifest: dict) -> None:
+    """Rewrite version strings and artifact filenames in the static download page."""
+    page = ROOT / "website" / "download.html"
+    text = page.read_text(encoding="utf-8")
+    v = manifest["version"]
+    text = re.sub(r"Agent-Mark-Hub-\d+\.\d+\.\d+-", f"Agent-Mark-Hub-{v}-", text)
+    text = re.sub(r"Version \d+\.\d+\.\d+", f"Version {v}", text)
+    page.write_text(text, encoding="utf-8", newline="")
+
+
 def sync_download_page(manifest: dict) -> None:
     """Keep the no-JS fallbacks in download.html in step with version.json.
 
@@ -133,7 +143,7 @@ def main() -> int:
             "url": "/app/",
             "offline": True,
             "platforms": ["android", "ios"],
-            "note": "Companion preview. Data stays on the device; it does not sync with the desktop hub.",
+            "note": "Encrypted companion: passcode + AES-256-GCM local store, auto-lock, and an encrypted .agmm transfer to the desktop hub. No cloud relay or always-on sync.",
         },
         "data_policy": {
             "telemetry": False,
@@ -143,7 +153,7 @@ def main() -> int:
         },
         "pilot_gate": {
             "real_student_data_allowed": False,
-            "reason": "External security review has not closed the open findings; no code-signing certificate yet.",
+            "reason": "External security review has not closed the open findings; no Windows code-signing certificate yet; the published APK is debug-signed.",
         },
     }
 
@@ -155,6 +165,7 @@ def main() -> int:
         encoding="utf-8",
     )
     sync_download_page(manifest)
+    sync_version_text(manifest)
 
     print(f"version.json        {v}  ({args.channel})")
     print(f"{setup.name}  {setup_bytes} bytes  {setup_hash}")

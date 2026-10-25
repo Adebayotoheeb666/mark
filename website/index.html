@@ -136,10 +136,10 @@
       <ul class="trust-list">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>No AI or ML</b>No model, no inference, no training data. Grades come from arithmetic you can check by hand.</span></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Offline by default</b>Works with the network cable unplugged. There is no relay account to create.</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Local database</b>SQLite in the school's own AppData folder. Delete the folder for a factory reset.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Encrypted local vault</b>XChaCha20-Poly1305 at rest, Argon2id-wrapped keys, local staff accounts and a 15-minute lock. Delete the folder for a factory reset.</span></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Real signatures</b>Ed25519 over the exact report payload, verifiable with a public key.</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Sealed backups</b>Backup files contain no readable names, classes or marks.</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Provable history</b>An offline checker re-verifies the audit chain and every locked report.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Sealed backups</b>Full snapshots, signed manifests, and a restore drill that must pass before real data is enabled.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></svg><span><b>Provable history</b>An offline checker re-verifies the audit chain, every locked report, and every backup.</span></li>
       </ul>
     </div>
   </div>
@@ -189,7 +189,7 @@
     </details>
     <details class="card" style="margin-bottom:.6rem">
       <summary style="cursor:pointer;font-weight:600">Where does student data live?</summary>
-      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">In a SQLite database under <code>%APPDATA%\org.agentmark.hub\agent-mark-hub\</code> on that PC, plus encrypted backup files you choose to create. Nothing is uploaded, because the app has no network client.</p>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">In an encrypted vault under <code>%APPDATA%\org.agentmark.hub\agent-mark-hub\</code> on that PC, plus encrypted backup files you choose to create. The data key is wrapped by staff passwords and a printed recovery code. Nothing is uploaded, because the app has no network client.</p>
     </details>
     <details class="card" style="margin-bottom:.6rem">
       <summary style="cursor:pointer;font-weight:600">Is there an AI feature?</summary>
@@ -197,7 +197,7 @@
     </details>
     <details class="card" style="margin-bottom:.6rem">
       <summary style="cursor:pointer;font-weight:600">Can teachers use a phone?</summary>
-      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">Yes — there is an installable <a href="app/">mobile app</a> that runs in the phone browser and works offline. It is a companion preview: capture and check scores, preview a card, keep data on the device. The authoritative hub stays on the school PC.</p>
+      <p class="small" style="margin:.7rem 0 0;color:var(--ink-2)">Yes — there is an installable <a href="app/">mobile app</a> that runs in the phone browser and works offline. It is a companion: capture and check scores, preview a card, then export an encrypted <code>.agmm</code> file for import into the desktop hub. It has its own passcode, encrypted store and auto-lock. The authoritative hub stays on the school PC.</p>
     </details>
     <details class="card">
       <summary style="cursor:pointer;font-weight:600">Is it ready for real students?</summary>
@@ -238,7 +238,7 @@
       <div>
         <h3>Status</h3>
         <ul>
-          <li><span class="small muted">Version 0.1.0 · pilot</span></li>
+          <li><span class="small muted">Version 0.2.0 · pilot</span></li>
           <li><span class="small muted">Windows 10/11 x64</span></li>
           <li><span class="small muted">Updated <span data-year>2026</span></span></li>
         </ul>

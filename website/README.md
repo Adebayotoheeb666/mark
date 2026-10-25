@@ -78,8 +78,9 @@ checksums always describe the published files.
 | `robots.txt`, `sitemap.xml` | Indexing hints |
 
 The Android APK is **not** committed to `downloads/`. Tagged releases publish it as a public
-GitHub Release asset (`v0.1.0`); `download.html` links directly to that asset, so visitors do not
-need a GitHub login.
+GitHub Release asset; `download.html` links to the `v0.1.0` debug preview (synthetic-data only) and
+notes that the 0.2.0 APK is published by CI when the `v0.2.0` tag is pushed. The installable PWA at
+`/app/` is the current 0.2.0 mobile companion.
 
 ## Local check
 

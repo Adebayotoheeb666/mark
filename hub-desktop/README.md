@@ -1,8 +1,11 @@
 # Agent Mark Hub — desktop console (Tauri v2)
 
-Local-first school records console. Rust backend (SQLite, SQLCipher-free `rusqlite`, SQLite's own
-encryption is *not* used — data is at rest in the app data dir; backups are encrypted), vanilla JS UI,
-no AI/ML anywhere.
+Local-first school records console. Rust backend (SQLite in memory, whole-database XChaCha20-Poly1305
+vault at rest, Argon2id-wrapped keys), vanilla JS UI, no AI/ML anywhere.
+
+The database is never written as plaintext SQLite. `hub.db` is an `AGMDB001` AEAD blob; the random
+data key is wrapped by each staff account's password and by the printed recovery code in `vault.json`.
+SQLCipher is not used.
 
 ## Run it
 
@@ -22,8 +25,9 @@ The build uses the **`stable-x86_64-pc-windows-gnu` toolchain as both host and t
 proc-macros are host binaries, so an MSVC host would still need `link.exe` even when targeting GNU.
 Install it once with `rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal`.
 
-Data lives in `%APPDATA%\org.agentmark.hub\agent-mark-hub\hub.db` plus `backups\`. Delete that folder
-for a factory reset.
+Data lives in `%APPDATA%\org.agentmark.hub\agent-mark-hub\`: `hub.db` (encrypted vault), `vault.json`
+(staff accounts + wrapped data keys), and `backups\` (encrypted snapshots, signed manifests, and
+`vault-BK-*.json` recovery copies). Delete that folder for a factory reset — after taking a backup.
 
 ## Package a release (NSIS + MSI + portable ZIP)
 
@@ -41,9 +45,9 @@ tauri build --bundles nsis,msi
 
 Outputs:
 
-- `src-tauri\target\release\bundle\nsis\Agent Mark Hub_0.1.0_x64-setup.exe` — per-user install,
+- `src-tauri\target\release\bundle\nsis\Agent Mark Hub_0.2.0_x64-setup.exe` — per-user install,
   no admin prompt, WebView2 bootstrapper embedded.
-- `src-tauri\target\release\bundle\msi\Agent Mark Hub_0.1.0_x64_en-US.msi` — per-machine install
+- `src-tauri\target\release\bundle\msi\Agent Mark Hub_0.2.0_x64_en-US.msi` — per-machine install
   (administrator required), suitable for Group Policy, Intune or SCCM.
 
 The bundler downloads NSIS 3.13 and WiX 3.14 once and caches them under `%LOCALAPPDATA%\tauri`.
@@ -120,61 +124,81 @@ entirely, delete `.cargo/config.toml`, and build with the default MSVC toolchain
 
 ## Test walkthrough (5 minutes, synthetic data only)
 
-1. **Dashboard** → `Load demo school (6 students)`. Readiness checklist should show the two hard
-   blockers (no verified backup, no drill).
-2. **Students** → try CSV import with one valid row + one duplicate: the duplicate must appear in the
-   dry-run errors and *nothing* may be written. Then `Import for real`.
-3. **Scores** → enter `26-JSS2A-001` `MATHS/CA1` = `17`. Then try `99` → `VAL-RANGE-01` refusal.
+1. **First launch** → setup screen: school name, admin username, 12+ character password. Save the
+   recovery code once; it is not shown again. The dashboard opens in **DEMO MODE**.
+2. **Users** → add a teacher, head, and viewer. Each gets a temporary password and must change it at
+   first sign-in. Admin cannot approve or lock reports.
+3. **Dashboard** → `Load demo school (6 students)`. Readiness shows the real-data gate (backup, drill,
+   privacy acknowledgment, demo cleared).
+4. **Students** → try CSV import with one valid row + one duplicate: the duplicate must appear in the
+   dry-run errors and *nothing* may be written. Real import is admin-only and requires real mode.
+5. **Scores** → enter `26-JSS2A-001` `MATHS/CA1` = `17`. Then try `99` → `VAL-RANGE-01` refusal.
    Enter the same score twice with a different value → `VAL-DUP-01` refusal (no silent overwrite).
-4. **Flags** → the inbox lists blocking `VAL-MISS-01` rows. `Confirm…` must demand a reason;
+6. **Flags** → the inbox lists blocking `VAL-MISS-01` rows. `Confirm…` must demand a reason;
    `Correct`/`Escalate` resolve without one. Flags never change a score.
-5. **Comments** → pick subject/band, choose a sentence, edit, save. Length gate blocks >210 chars.
-6. **Reports** → `Draft all complete students`. Students with missing scores are skipped, not faked.
-   Then `Teacher ✓` → `Head ✓` → `Lock+Sign` (button only appears once reviewed). `View` opens the
-   print sheet — unlockable reports print a red **DRAFT — NOT OFFICIAL** banner.
-7. **Backup** → `1. Backup now` writes an XChaCha20-Poly1305 blob + sha256 manifest and sets the
-   verified flag. `2. Run restore drill` re-reads that blob, checks it against the manifest and only
-   then passes. **Go Live stays blocked** until both are true.
-8. **Audit** → every action above appears in the hash-chained log (each row hashes the previous
-   hash, so tampering with history is detectable).
+7. **Comments** → pick subject/band, choose a sentence, edit, save. Length gate blocks >210 chars.
+8. **Reports** → `Draft all complete students`. Students with missing scores are skipped, not faked.
+   Then teacher review → head review → `Lock+Sign` (only the head can lock/sign). `View` opens the
+   print sheet — unlocked reports print a red **DRAFT — NOT OFFICIAL** banner.
+9. **Backup & real-data gate** → `Clear demo`, `Backup now`, `Verify latest`, `Run restore drill`,
+   acknowledge the privacy notice, then `Enable real data`. The app refuses to enable real mode until
+   every gate is true.
+10. **Audit** → every action above appears in the hash-chained log (each row hashes the previous
+    hash, so tampering with history is detectable).
 
 ## Headless verification (no clicking)
 
-Two scripts check the build without driving the UI:
+Three scripts check the build without driving the UI:
 
-- `python tools\verify_db.py <hub.db>` — read-only audit of a database: audit hash-chain
-  integrity, the Ed25519 signature of every locked report, and that backup blobs contain no
-  plaintext student data.
+- `python tools\verify_db.py <data-folder>` — opens the encrypted vault read-only with an account
+  password, re-computes the audit hash chain, verifies the Ed25519 signature of every locked report,
+  and verifies every backup manifest, signature, decryption, row counts, audit head, and plaintext
+  leak check.
 - `python tools\e2e_smoke.py 9223` — connects to the running app through WebView2's DevTools
-  protocol and calls the same `invoke` bridge the UI uses, exercising the full path:
-  scores → flags → drafts → teacher/head approval → lock+sign → comment → backup → drill →
-  go live. It needs a seeded database and the remote-debugging port:
+  protocol and calls the same `invoke` bridge the UI uses, exercising setup, roles, wrong password,
+  demo clearing, backup, verify, drill, real mode, mobile `.agmm` import, and disaster recovery.
+- `python tools\ui_smoke.py 9224` — drives the real WebView setup/login/lock/auto-lock screens.
 
-  ```powershell
-  $env:AGM_DATA_DIR = "$env:TEMP\agm-e2e"      # throwaway database (normal runs ignore this)
-  $env:AGM_AUTO_DEMO = "1"                      # seed 6 demo students at startup
-  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
-  Start-Process .\src-tauri\target\debug\agent-mark-hub.exe
-  python tools\e2e_smoke.py 9223
-  python tools\verify_db.py "$env:TEMP\agm-e2e\hub.db"
-  ```
+```powershell
+$env:AGM_DATA_DIR = "$env:TEMP\agm-e2e"      # throwaway database (normal runs ignore this)
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
+Start-Process .\src-tauri\target\debug\agent-mark-hub.exe
+python tools\e2e_smoke.py 9223
+python tools\verify_db.py "$env:TEMP\agm-e2e" --user admin.e2e
+```
 
-  `AGM_DATA_DIR` and `AGM_AUTO_DEMO` exist only for testing/demos; a normal launch uses
-  `%APPDATA%` and starts empty.
+`AGM_DATA_DIR` exists only for testing; a normal launch uses `%APPDATA%` and starts at the setup
+screen. The E2E creates its own admin account and does not need `AGM_AUTO_DEMO`.
 
 ## Hard gates already enforced in code
 
-- `report_lock` refuses without *both* a teacher and a head approval (`REP-INT-03`) and re-hashes the
-  payload before signing (`REP-INT-02`).
-- Report signatures are real Ed25519 (`ed25519-dalek`), key generated on first run and stored in
-  `meta`. `report_lock` returns `AGM1:<id>:<sha256>:<sig>` for the QR payload.
-- `go_live` requires `backup_verified=yes` **and** `drill_passed=yes`.
+- Local accounts with Argon2id hashes; roles (`admin`, `head`, `teacher`, `viewer`) are enforced in
+  Rust, and every mutation derives the actor from the authenticated session — never from the UI.
+- 15-minute idle lock, manual lock, and failed-attempt throttling (5 failures, then exponential
+  backoff from 30 s to 15 min).
+- `report_lock` refuses without *both* a teacher and a head approval (`REP-INT-03`), re-hashes the
+  payload before signing (`REP-INT-02`), and only the head role can lock/sign. Admin cannot approve.
+- Report signatures are real Ed25519 (`ed25519-dalek`); the signing key lives inside the encrypted
+  vault. `report_lock` returns `AGM1:<id>:<sha256>:<sig>` for the QR payload.
+- The database is a whole-database XChaCha20-Poly1305 vault. SQLite runs in memory; the data key is
+  wrapped by each password and the recovery code, never stored in plaintext.
+- Backups are full encrypted snapshots with signed manifests; verify, restore-to-fresh, and drill
+  check counts, digest, and the audit chain. A backup kit also carries `vault-BK-*.json` so a new PC
+  can recover after losing `hub.db`.
+- Real-data mode defaults to off and requires zero demo rows, a verified backup, a passed drill,
+  school details, and a privacy acknowledgment.
 - Weight sums are checked per subject; a bad weight table blocks reports instead of guessing.
 - Audit rows are hash-chained (`prev_hash` → `hash`), so edits break the chain.
 
-## Known gaps before real student data (Phase 8 audit gate)
+## Known gaps before real student data
 
-- No lock screen / per-user login yet (single-user local assumption; roles are asserted by the caller).
-- Backup is a summary payload, not yet a full encrypted table dump + restore-into-fresh-DB routine.
+- No code-signing certificate yet; Windows SmartScreen warns on the installers.
+- No independent security review yet. Engineering tests are green; that is not an audit.
+- Retention/pruning, data-subject export/correction/erasure, and offboarding wipe are documented as
+  requirements but not implemented as one-click features.
+- No automatic backup scheduler, stale-backup block, key rotation, or account-removal UI.
 - No relay/LAN sync client, no QR scanner, no PDF export (print-only MVP per ADR-0007).
-- Real PII must stay out until the external audit closes all Critical/High findings.
+- The Android APK is debug-signed until the keystore secrets are configured; the published 0.1.0 APK
+  predates the encrypted mobile store.
+- Real PII must stay out until the independent review and school/legal gates close. See
+  `docs/REAL_DATA_READINESS.md`.

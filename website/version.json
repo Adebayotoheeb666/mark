@@ -1,29 +1,29 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "channel": "pilot",
   "released": "2026-10-25",
-  "notes": "Agent Mark Hub 0.1.0: NSIS per-user installer, MSI for managed deployment, portable ZIP, and the mobile companion (PWA).",
+  "notes": "Agent Mark Hub 0.2.0: encrypted local vault, staff accounts and roles, backup/verify/restore drill, disaster recovery from the backup kit, real-data gate, and encrypted mobile .agmm transfer.",
   "windows": {
     "installer": {
-      "file": "downloads/Agent-Mark-Hub-0.1.0-x64-setup.exe",
-      "bytes": 6075600,
-      "sha256": "CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08",
+      "file": "downloads/Agent-Mark-Hub-0.2.0-x64-setup.exe",
+      "bytes": 6211222,
+      "sha256": "10333E64F00068009B4BB6E23FCD5DE87918DFCEEC3C5C7AB4296FE7868D430D",
       "kind": "nsis",
       "install_mode": "currentUser",
       "requires_admin": false
     },
     "msi": {
-      "file": "downloads/Agent-Mark-Hub-0.1.0-x64.msi",
-      "bytes": 8245248,
-      "sha256": "7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939",
+      "file": "downloads/Agent-Mark-Hub-0.2.0-x64.msi",
+      "bytes": 8437760,
+      "sha256": "D3765C89B8972B6360C86EBE2439D3D4AFD46FDD79D783E75568E939813618CD",
       "kind": "msi",
       "install_mode": "perMachine",
       "requires_admin": true
     },
     "portable": {
-      "file": "downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip",
-      "bytes": 6054793,
-      "sha256": "D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB",
+      "file": "downloads/Agent-Mark-Hub-0.2.0-windows-x64-portable.zip",
+      "bytes": 12296632,
+      "sha256": "5FE13828787F09BBE52AA29020D316DF54782DBA790F7140568D629E25E46D17",
       "kind": "zip"
     },
     "minimum_os": "Windows 10 (64-bit)",
@@ -39,7 +39,7 @@
       "android",
       "ios"
     ],
-    "note": "Companion preview. Data stays on the device; it does not sync with the desktop hub."
+    "note": "Encrypted companion: passcode + AES-256-GCM local store, auto-lock, and an encrypted .agmm transfer to the desktop hub. No cloud relay or always-on sync."
   },
   "data_policy": {
     "telemetry": false,
@@ -49,6 +49,6 @@
   },
   "pilot_gate": {
     "real_student_data_allowed": false,
-    "reason": "External security review has not closed the open findings; no code-signing certificate yet."
+    "reason": "External security review has not closed the open findings; no Windows code-signing certificate yet; the published APK is debug-signed."
   }
 }

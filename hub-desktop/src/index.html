@@ -6,22 +6,34 @@
 <title>Agent Mark Hub</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header>
-  <h1>Agent Mark Hub <span class="tag">local-first · v0.1.0</span></h1>
-  <div id="live-badge"></div>
-</header>
-<nav id="nav">
-  <button data-s="dash" class="on">Dashboard</button>
-  <button data-s="students">Students</button>
-  <button data-s="scores">Scores</button>
-  <button data-s="flags">Flags</button>
-  <button data-s="comments">Comments</button>
-  <button data-s="reports">Reports</button>
-  <button data-s="backup">Backup</button>
-  <button data-s="audit">Audit</button>
-</nav>
-<main id="view"></main>
+<body class="auth-mode">
+<div id="app">
+  <header>
+    <div>
+      <h1>Agent Mark Hub <span class="tag">local-first · v0.2.0</span></h1>
+      <div id="school-label" class="school-label"></div>
+    </div>
+    <div class="hdr-right">
+      <span id="mode-badge" class="pill off">LOCKED</span>
+      <span id="user-chip" class="userchip"></span>
+      <button id="lock-btn" class="hdr-btn" type="button">Lock</button>
+    </div>
+  </header>
+  <nav id="nav">
+    <button data-s="dash" class="on">Dashboard</button>
+    <button data-s="students">Students</button>
+    <button data-s="scores">Scores</button>
+    <button data-s="flags">Flags</button>
+    <button data-s="comments">Comments</button>
+    <button data-s="reports">Reports</button>
+    <button data-s="backup">Backup</button>
+    <button data-s="audit">Audit</button>
+    <button data-s="users" id="nav-users">Users</button>
+    <button data-s="account">Account</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<div id="auth"></div>
 <div id="toast"></div>
 <script src="app.js"></script>
 </body>

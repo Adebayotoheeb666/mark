@@ -53,24 +53,24 @@
     <h2>1. Download and run</h2>
     <ol>
       <li>On the <a href="download.html">download page</a>, choose <strong>Download installer</strong> (5.79 MB).</li>
-      <li>Open <code>Agent-Mark-Hub-0.1.0-x64-setup.exe</code> from your Downloads folder.</li>
+      <li>Open <code>Agent-Mark-Hub-0.2.0-x64-setup.exe</code> from your Downloads folder.</li>
       <li>Windows SmartScreen may say <em>“Windows protected your PC”</em> because this pilot build is not code-signed yet. Choose <strong>More info → Run anyway</strong>. If your school blocks unsigned installers, use the <a href="download.html">portable ZIP</a> instead.</li>
       <li>The installer copies the app to <code>%LOCALAPPDATA%\Agent Mark Hub</code> and adds a Start-menu entry. It finishes in a few seconds.</li>
     </ol>
 
     <h3>Managed install (IT)</h3>
     <p>For a whole lab or school fleet, use the MSI on the <a href="download.html#managed">download page</a>. It installs for all users under <code>C:\Program Files\Agent Mark Hub</code> and needs administrator rights. Silent install:</p>
-    <div class="hash">msiexec /i Agent-Mark-Hub-0.1.0-x64.msi /qn</div>
+    <div class="hash">msiexec /i Agent-Mark-Hub-0.2.0-x64.msi /qn</div>
     <p class="small muted" style="margin-top:.6rem">The MSI is per-machine, so it is suitable for Group Policy, Intune or SCCM. The .exe installer above remains the no-admin option for a single teacher's PC.</p>
 
     <h2>2. First launch</h2>
-    <p>Open <strong>Agent Mark Hub</strong> from the Start menu. The window opens on the Dashboard. On first run the app creates its database and a signing key:</p>
-    <div class="hash">%APPDATA%\org.agentmark.hub\agent-mark-hub\hub.db</div>
-    <p style="margin-top:.8rem">You should see four zeroed counters, a readiness checklist with two blockers (no verified backup, no drill), and a <strong>Load demo school (6 students)</strong> button.</p>
+    <p>Open <strong>Agent Mark Hub</strong> from the Start menu. The first run is a setup screen: enter the school name, choose an admin username, and set a 12+ character passphrase. The app prints a recovery code once — write it down, seal it, and keep it offline. It then creates the encrypted vault:</p>
+    <div class="hash">%APPDATA%\org.agentmark.hub\agent-mark-hub\hub.db      encrypted vault<br>%APPDATA%\org.agentmark.hub\agent-mark-hub\vault.json  staff accounts + wrapped keys</div>
+    <p style="margin-top:.8rem">You land on the dashboard in <strong>DEMO MODE</strong> with zeroed counters and a <strong>Load demo school (6 students)</strong> button. The real-data gate is deliberately closed: backup verified, restore drill passed, privacy acknowledged, and demo data cleared are all required before real import unlocks.</p>
 
     <figure style="margin:1.5rem 0">
       <img src="assets/screenshot-dashboard.png" alt="The Agent Mark dashboard after loading the six-student demo school" style="border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)">
-      <figcaption class="tiny muted" style="margin-top:.5rem">The dashboard after loading the demo school. The two red blockers are deliberate: go-live stays locked until a backup is verified and a restore drill passes.</figcaption>
+      <figcaption class="tiny muted" style="margin-top:.5rem">The dashboard after loading the demo school. The gate stays locked until a backup is verified and a restore drill passes.</figcaption>
     </figure>
 
     <h2>3. The first ten minutes</h2>
@@ -79,7 +79,7 @@
       <li><strong>Scores.</strong> Enter <code>26-JSS2A-001</code>, <code>MATHS / CA1</code>, value <code>17</code>. Then try <code>99</code> — it is refused with <code>VAL-RANGE-01</code>. Enter the same score again with a different value — refused with <code>VAL-DUP-01</code>.</li>
       <li><strong>Flags.</strong> The inbox lists missing-score flags. Resolve one; confirming requires a reason.</li>
       <li><strong>Reports.</strong> Draft all complete students, then Teacher ✓ → Head ✓ → Lock + Sign. Open the print sheet: approved cards carry the signature block, unapproved ones a red DRAFT banner.</li>
-      <li><strong>Backup.</strong> Run <strong>Backup now</strong>, then <strong>Run restore drill</strong>. Only then does <strong>Go Live</strong> unlock.</li>
+      <li><strong>Backup &amp; real-data gate.</strong> Clear the demo data, run <strong>Backup now</strong>, <strong>Verify latest</strong>, then <strong>Run restore drill</strong>, acknowledge the privacy notice, and only then <strong>Enable real data</strong>.</li>
       <li><strong>Audit.</strong> Every action above is in the log, each row hashing the previous one.</li>
     </ol>
 
@@ -87,7 +87,7 @@
     <p>Use <em>Settings → Apps → Agent Mark Hub → Uninstall</em>, or run <code>%LOCALAPPDATA%\Agent Mark Hub\uninstall.exe</code>. This removes the program and shortcuts.</p>
     <p><strong>Your data is intentionally left behind</strong> so an uninstall cannot destroy a term's records. To remove it as well, delete:</p>
     <div class="hash">%APPDATA%\org.agentmark.hub</div>
-    <p class="small muted" style="margin-top:.6rem">That folder is also the factory reset: close the app, delete it, and the next launch starts empty with a new signing key.</p>
+    <p class="small muted" style="margin-top:.6rem">That folder is also the factory reset: close the app, delete it, and the next launch starts a new empty vault with a new signing key. Keep the recovery code and a backup if you may need the old data.</p>
 
     <h2>5. Troubleshooting</h2>
 
@@ -104,7 +104,7 @@
     <p>Two copies are running. Close both from Task Manager, then start one. The app is designed for a single user on one PC.</p>
 
     <h3>Where are my backups?</h3>
-    <p>In <code>%APPDATA%\org.agentmark.hub\agent-mark-hub\backups\</code>. They are encrypted; copying them somewhere else is safe but useless without the key stored in the same database. The <a href="privacy.html#verify">verification script</a> can confirm a backup contains no readable student data.</p>
+    <p>In <code>%APPDATA%\org.agentmark.hub\agent-mark-hub\backups\</code>. Each backup is a full encrypted snapshot plus a signed <code>.json</code> manifest. Copy both files to a USB drive kept off-site. The backup is encrypted with a key derived from the vault data key; the data key is wrapped by staff passwords and the printed recovery code, never stored beside the backup. The <a href="privacy.html#verify">offline verifier</a> can confirm the manifest, signature, decryption, counts and audit head.</p>
 
     <h2>6. Install the mobile app</h2>
     <p>The mobile app is a progressive web app: it installs from the browser, works offline, and needs no store account.</p>
@@ -113,7 +113,7 @@
       <li><strong>iPhone/iPad (Safari):</strong> open the same link, tap <em>Share</em>, then <em>Add to Home Screen</em>.</li>
       <li>Open it once while online so the app shell is cached; after that it starts offline.</li>
     </ul>
-    <p class="small muted">The phone app is a companion preview, not the hub: it stores its data on the phone and does not read the school PC's database. Keep the authoritative records on the PC.</p>
+    <p class="small muted">The phone app is a companion, not the hub: it creates a passcode-protected encrypted store, locks after 5 minutes, and exports an encrypted <code>.agmm</code> file for import on the PC. It never reads the school PC's vault directly. Keep the authoritative records on the PC.</p>
 
     <hr>
     <p class="small muted">Need the command-line build, the test scripts, or the architecture decisions? The project ships <code>README.md</code>, <code>docs/PHASE_9_REPORT.md</code> and the ADR set alongside the source.</p>
@@ -150,7 +150,7 @@
       <div>
         <h3>Status</h3>
         <ul>
-          <li><span class="small muted">Version 0.1.0 · pilot</span></li>
+          <li><span class="small muted">Version 0.2.0 · pilot</span></li>
           <li><span class="small muted">Windows 10/11 x64</span></li>
           <li><span class="small muted">Updated <span data-year>2026</span></span></li>
         </ul>
