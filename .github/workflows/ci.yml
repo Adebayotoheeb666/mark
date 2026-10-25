@@ -110,12 +110,18 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
-      - uses: actions/setup-java@v4
+      # ubuntu-latest already ships the Android SDK (platform 36, build-tools 36,
+      # platform-tools) and ANDROID_HOME; no third-party setup action is needed.
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
 
-      - uses: android-actions/setup-android@v3
+      - name: Show Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" | sort -V | tail -3
+          ls "$ANDROID_HOME/build-tools" | sort -V | tail -3
 
       - name: Install Capacitor
         working-directory: mobile
