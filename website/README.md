@@ -29,8 +29,11 @@ No `package.json` is required; Vercel treats the directory as static files.
 
 ### After the first deploy
 
-- Replace the placeholder domain `agent-mark.vercel.app` in `sitemap.xml` and `robots.txt`
-  with the real one (or delete both files if the site should not be indexed).
+- The live production alias is `https://mark-tau-wheat.vercel.app/`, already used in
+  `sitemap.xml` and `robots.txt`. If a custom domain replaces it, update both files (or delete
+  them if the site should not be indexed).
+- Keep **Root Directory** set to `website`. Changing it only affects *new* deployments, so
+  redeploy after saving — otherwise `/` serves the repo root and returns Vercel's 404.
 - If a custom domain is attached, add it in Vercel → Settings → Domains. No code change is
   needed; every internal link is relative.
 
