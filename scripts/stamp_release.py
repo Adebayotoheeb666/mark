@@ -1,6 +1,6 @@
 """Write website/version.json and website/downloads/SHA256SUMS.txt from the built artifacts.
 
-Run after `release.ps1` (or by hand once the two files exist in website/downloads):
+Run after `release.ps1` (or by hand once all three files exist in website/downloads):
 
     python scripts/stamp_release.py --version 0.1.0
 
@@ -72,6 +72,7 @@ def sync_download_page(manifest: dict) -> None:
             )
 
     replace("setup", windows["installer"])
+    replace("msi", windows["msi"])
     replace("portable", windows["portable"])
     page.write_text(text, encoding="utf-8", newline="")
 
@@ -85,19 +86,22 @@ def main() -> int:
 
     v = args.version
     setup = DOWNLOADS / f"Agent-Mark-Hub-{v}-x64-setup.exe"
+    msi = DOWNLOADS / f"Agent-Mark-Hub-{v}-x64.msi"
     portable = DOWNLOADS / f"Agent-Mark-Hub-{v}-windows-x64-portable.zip"
-    for p in (setup, portable):
+    for p in (setup, msi, portable):
         if not p.exists():
             raise SystemExit(f"missing artifact: {p}")
 
     setup_bytes, setup_hash = digest(setup)
+    msi_bytes, msi_hash = digest(msi)
     portable_bytes, portable_hash = digest(portable)
 
     manifest = {
         "version": v,
         "channel": args.channel,
         "released": date.today().isoformat(),
-        "notes": args.notes or f"Agent Mark Hub {v}.",
+        "notes": args.notes
+        or f"Agent Mark Hub {v}: NSIS per-user installer, MSI for managed deployment, portable ZIP, and the mobile companion (PWA).",
         "windows": {
             "installer": {
                 "file": f"downloads/{setup.name}",
@@ -106,6 +110,14 @@ def main() -> int:
                 "kind": "nsis",
                 "install_mode": "currentUser",
                 "requires_admin": False,
+            },
+            "msi": {
+                "file": f"downloads/{msi.name}",
+                "bytes": msi_bytes,
+                "sha256": msi_hash.upper(),
+                "kind": "msi",
+                "install_mode": "perMachine",
+                "requires_admin": True,
             },
             "portable": {
                 "file": f"downloads/{portable.name}",
@@ -139,12 +151,14 @@ def main() -> int:
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
     (DOWNLOADS / "SHA256SUMS.txt").write_text(
-        f"{setup_hash}  {setup.name}\n{portable_hash}  {portable.name}\n", encoding="utf-8"
+        f"{setup_hash}  {setup.name}\n{msi_hash}  {msi.name}\n{portable_hash}  {portable.name}\n",
+        encoding="utf-8",
     )
     sync_download_page(manifest)
 
     print(f"version.json        {v}  ({args.channel})")
     print(f"{setup.name}  {setup_bytes} bytes  {setup_hash}")
+    print(f"{msi.name}  {msi_bytes} bytes  {msi_hash}")
     print(f"{portable.name}  {portable_bytes} bytes  {portable_hash}")
     return 0
 

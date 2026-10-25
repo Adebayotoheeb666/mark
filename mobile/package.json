@@ -1,0 +1,19 @@
+{
+  "name": "agent-mark-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capacitor wrapper for the Agent Mark PWA companion (offline, device-local).",
+  "scripts": {
+    "sync-web": "node scripts/sync-web.js",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android",
+    "android:build": "cd android && ./gradlew assembleDebug --no-daemon"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Download — Agent Mark</title>
-<meta name="description" content="Download Agent Mark for Windows 10/11, the portable build, or install the mobile app. SHA-256 checksums published for every file.">
+<meta name="description" content="Download Agent Mark for Windows 10/11, the MSI for managed deployment, the portable build, or install the mobile app. SHA-256 checksums for every file.">
 <meta property="og:title" content="Download Agent Mark">
 <meta property="og:description" content="Windows installer, portable build, and the mobile app. Checksums included.">
 <meta property="og:type" content="website">
@@ -39,7 +39,7 @@
   <div class="wrap">
     <span class="eyebrow">Version 0.1.0 · pilot preview</span>
     <h1 style="max-width:18em">Download Agent Mark</h1>
-    <p class="lede">One file for Windows. Nothing to configure, no account, no internet connection required after install. Use synthetic data until the security review closes.</p>
+    <p class="lede">Installers for Windows. Nothing to configure, no account, no internet connection required after install. Use synthetic data until the security review closes.</p>
   </div>
 </section>
 
@@ -57,7 +57,7 @@
       </div>
       <p class="small" style="color:var(--ink-2)">Installs for the current user — <strong>no administrator password</strong>. Creates a Start-menu shortcut and a normal uninstaller. The WebView2 bootstrapper is bundled in case the PC has never run Edge.</p>
       <div class="dl-size">
-        <span class="pill" id="size-setup">5.80 MB</span>
+        <span class="pill" id="size-setup">5.79 MB</span>
         <span class="pill">.exe</span>
         <span class="pill">no admin</span>
         <span class="pill">offline after install</span>
@@ -66,9 +66,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
         Download installer
       </a>
-      <div class="hash">SHA-256<br><span id="h-setup" style="user-select:all">266AEFC8D109231BD904BEC8F1BE406220FCED2DB1C5999E509782735A31FB70</span></div>
+      <div class="hash">SHA-256<br><span id="h-setup" style="user-select:all">CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08</span></div>
       <div class="dl-alt">
-        <button class="btn btn-ghost btn-sm" id="copy-setup" style="align-self:flex-start" data-copy="266AEFC8D109231BD904BEC8F1BE406220FCED2DB1C5999E509782735A31FB70">Copy checksum</button>
+        <button class="btn btn-ghost btn-sm" id="copy-setup" style="align-self:flex-start" data-copy="CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08">Copy checksum</button>
         <a href="install.html">Installation guide →</a>
       </div>
     </div>
@@ -85,8 +85,8 @@
         <p class="small" style="color:var(--ink-2);margin-bottom:.6rem">Unzip anywhere and double-click <code>agent-mark-hub.exe</code>. Keep <code>WebView2Loader.dll</code> beside it.</p>
         <div class="dl-size"><span class="pill" id="size-portable">5.77 MB</span><span class="pill">.zip</span></div>
         <a class="btn btn-ghost" href="downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip" download>Download portable</a>
-        <div class="hash" style="margin-top:.8rem">SHA-256<br><span id="h-portable" style="user-select:all">BFD081B35FE74BAB395D60AE10E4A7FB11B838E7C612DDB58423C0F83EADD984</span></div>
-        <button class="btn btn-ghost btn-sm" id="copy-portable" style="margin-top:.6rem" data-copy="BFD081B35FE74BAB395D60AE10E4A7FB11B838E7C612DDB58423C0F83EADD984">Copy checksum</button>
+        <div class="hash" style="margin-top:.8rem">SHA-256<br><span id="h-portable" style="user-select:all">D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB</span></div>
+        <button class="btn btn-ghost btn-sm" id="copy-portable" style="margin-top:.6rem" data-copy="D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB">Copy checksum</button>
       </div>
 
       <div class="dl-card">
@@ -103,6 +103,33 @@
         </div>
         <p class="tiny muted" style="margin:.7rem 0 0">iPhone: Share → <em>Add to Home Screen</em>. Android: menu → <em>Install app</em>.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="managed" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Managed deployment (MSI)</h2>
+      <p>For schools that install with Group Policy, Intune, or SCCM. The MSI installs for all users and requires administrator rights.</p>
+    </div>
+    <div class="dl-card" style="max-width:46rem">
+      <div class="dl-head">
+        <div class="os-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg></div>
+        <div>
+          <h3>Windows MSI package</h3>
+          <p>Per-machine · Windows 10/11 · 64-bit</p>
+        </div>
+      </div>
+      <p class="small" style="color:var(--ink-2)">Silent install: <code>msiexec /i Agent-Mark-Hub-0.1.0-x64.msi /qn</code>. For a single teacher's PC, the per-user .exe above is simpler and needs no admin.</p>
+      <div class="dl-size">
+        <span class="pill" id="size-msi">7.86 MB</span>
+        <span class="pill">.msi</span>
+        <span class="pill">admin required</span>
+      </div>
+      <a class="btn btn-primary" href="downloads/Agent-Mark-Hub-0.1.0-x64.msi" download>Download MSI</a>
+      <div class="hash">SHA-256<br><span id="h-msi" style="user-select:all">7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939</span></div>
+      <button class="btn btn-ghost btn-sm" id="copy-msi" style="margin-top:.6rem" data-copy="7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939">Copy checksum</button>
     </div>
   </div>
 </section>
@@ -126,13 +153,18 @@
         <tbody>
           <tr style="border-top:1px solid var(--line)">
             <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-x64-setup.exe</td>
-            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-setup">5.80 MB</td>
-            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-setup">266AEFC8…31FB70</td>
+            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-setup">5.79 MB</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-setup">CE90D417…3B9C08</td>
+          </tr>
+          <tr style="border-top:1px solid var(--line)">
+            <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-x64.msi</td>
+            <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-msi">7.86 MB</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-msi">7CD63316…03B939</td>
           </tr>
           <tr style="border-top:1px solid var(--line)">
             <td style="padding:.8rem 1rem" class="mono">Agent-Mark-Hub-0.1.0-windows-x64-portable.zip</td>
             <td style="padding:.8rem 1rem" class="nowrap" id="tbl-size-portable">5.77 MB</td>
-            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-portable">BFD081B3…ADD984</td>
+            <td style="padding:.8rem 1rem" class="mono tiny" id="tbl-hash-portable">D46F3F58…7506CB</td>
           </tr>
         </tbody>
       </table>
@@ -164,7 +196,7 @@
           <li><strong>Memory:</strong> 4 GB (8 GB comfortable)</li>
           <li><strong>Disk:</strong> about 150 MB installed, plus backups</li>
           <li><strong>Display:</strong> 1280 × 800 or larger recommended for reports</li>
-          <li><strong>Rights:</strong> none — installs under your user profile</li>
+          <li><strong>Rights:</strong> none for the .exe; administrator for the MSI</li>
           <li><strong>Network:</strong> not required after install</li>
         </ul>
       </div>

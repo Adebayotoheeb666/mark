@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mark-tau-wheat.vercel.app/sitemap.xml
+Sitemap: https://mark-website-brown.vercel.app/sitemap.xml

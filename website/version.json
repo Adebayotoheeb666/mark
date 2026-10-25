@@ -2,20 +2,28 @@
   "version": "0.1.0",
   "channel": "pilot",
   "released": "2026-10-25",
-  "notes": "First packaged build: per-user Windows installer, portable ZIP, and the installable mobile companion (PWA).",
+  "notes": "Agent Mark Hub 0.1.0: NSIS per-user installer, MSI for managed deployment, portable ZIP, and the mobile companion (PWA).",
   "windows": {
     "installer": {
       "file": "downloads/Agent-Mark-Hub-0.1.0-x64-setup.exe",
-      "bytes": 6081397,
-      "sha256": "266AEFC8D109231BD904BEC8F1BE406220FCED2DB1C5999E509782735A31FB70",
+      "bytes": 6075600,
+      "sha256": "CE90D41718C167FE9C9DEEC8D7269006A47B095FFC4B82F0D62581A0353B9C08",
       "kind": "nsis",
       "install_mode": "currentUser",
       "requires_admin": false
     },
+    "msi": {
+      "file": "downloads/Agent-Mark-Hub-0.1.0-x64.msi",
+      "bytes": 8245248,
+      "sha256": "7CD633165B34F8E3A9C850E03BD5280BB152CEDE3C2E232A7B66D270F303B939",
+      "kind": "msi",
+      "install_mode": "perMachine",
+      "requires_admin": true
+    },
     "portable": {
       "file": "downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip",
       "bytes": 6054793,
-      "sha256": "BFD081B35FE74BAB395D60AE10E4A7FB11B838E7C612DDB58423C0F83EADD984",
+      "sha256": "D46F3F58C025F9C6D7F1701F89EFECBA2E913B1ADBD8CD892BC3F709307506CB",
       "kind": "zip"
     },
     "minimum_os": "Windows 10 (64-bit)",

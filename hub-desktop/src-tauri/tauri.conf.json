@@ -15,7 +15,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "msi"],
     "icon": ["icons/icon.ico"],
     "publisher": "Agent Mark",
     "copyright": "© 2026 Agent Mark. Local-first school records.",
@@ -29,6 +29,10 @@
         "languages": ["English"],
         "displayLanguageSelector": false,
         "installerIcon": "icons/icon.ico"
+      },
+      "wix": {
+        "language": "en-US",
+        "upgradeCode": "27dcc818-5185-51ae-84a1-da0dea51df8c"
       },
       "webviewInstallMode": {
         "type": "embedBootstrapper",

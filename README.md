@@ -13,6 +13,7 @@ Local-first school records & report-card system (No-AI).
 ```
 /hub-desktop   Tauri v2 desktop console (Rust + vanilla JS) — the shippable Hub
 /website       Static download site for Vercel + installable mobile companion (PWA)
+/mobile        Capacitor APK wrapper for the PWA companion (built by GitHub Actions)
 /engine        Python reference engine: calc, validation, flags, comments, reports
 /hub           Python reference hub: store, auth, encrypted backup, updater
 /app           Python prototype of the teacher-app sync/pairing flow
@@ -49,7 +50,7 @@ in `website/downloads/` **are** committed on purpose — Vercel serves them dire
 
 ## Ship a release
 ```powershell
-.\scripts\release.cmd          # build + NSIS installer + portable ZIP + website manifest
+.\scripts\release.cmd          # build + NSIS/MSI installers + portable ZIP + website manifest
 cd website; vercel --prod      # deploy the static site
 ```
 Artifacts land in `website/downloads/`; `website/version.json` and `SHA256SUMS.txt` are regenerated

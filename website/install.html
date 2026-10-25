@@ -39,7 +39,7 @@
   <div class="wrap-narrow">
     <span class="eyebrow">Windows 10/11 · 2 minutes</span>
     <h1>Install Agent Mark</h1>
-    <p class="lede">The installer runs under your own Windows account. No administrator password, no server, no account sign-up. This page also covers the first ten minutes, uninstalling, and a factory reset.</p>
+    <p class="lede">The per-user installer runs under your own Windows account — no administrator password, no server, no account sign-up. A per-machine MSI is available for managed fleets. This page also covers the first ten minutes, uninstalling, and a factory reset.</p>
   </div>
 </section>
 
@@ -57,6 +57,11 @@
       <li>Windows SmartScreen may say <em>“Windows protected your PC”</em> because this pilot build is not code-signed yet. Choose <strong>More info → Run anyway</strong>. If your school blocks unsigned installers, use the <a href="download.html">portable ZIP</a> instead.</li>
       <li>The installer copies the app to <code>%LOCALAPPDATA%\Agent Mark Hub</code> and adds a Start-menu entry. It finishes in a few seconds.</li>
     </ol>
+
+    <h3>Managed install (IT)</h3>
+    <p>For a whole lab or school fleet, use the MSI on the <a href="download.html#managed">download page</a>. It installs for all users under <code>C:\Program Files\Agent Mark Hub</code> and needs administrator rights. Silent install:</p>
+    <div class="hash">msiexec /i Agent-Mark-Hub-0.1.0-x64.msi /qn</div>
+    <p class="small muted" style="margin-top:.6rem">The MSI is per-machine, so it is suitable for Group Policy, Intune or SCCM. The .exe installer above remains the no-admin option for a single teacher's PC.</p>
 
     <h2>2. First launch</h2>
     <p>Open <strong>Agent Mark Hub</strong> from the Start menu. The window opens on the Dashboard. On first run the app creates its database and a signing key:</p>
@@ -93,7 +98,7 @@
     <p>Expected for an unsigned pilot build. <strong>More info → Run anyway</strong>. A signed installer is planned; until then, verify the SHA-256 on the <a href="download.html#checksums">download page</a> so you know the file is the one we published.</p>
 
     <h3>Antivirus quarantines the installer</h3>
-    <p>Unsigned NSIS installers occasionally trip heuristics. Ask IT to allow the file, or use the portable ZIP in a folder they trust. Both files are published with hashes.</p>
+    <p>Unsigned installers (NSIS and MSI) occasionally trip heuristics. Ask IT to allow the file, or use the portable ZIP in a folder they trust. All files are published with hashes.</p>
 
     <h3>“It says the database is locked”</h3>
     <p>Two copies are running. Close both from Task Manager, then start one. The app is designed for a single user on one PC.</p>

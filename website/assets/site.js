@@ -32,6 +32,7 @@
         if (copy) copy.setAttribute("data-copy", art.sha256);
       };
       wire("setup", w.installer);
+      wire("msi", w.msi);
       wire("portable", w.portable);
     } catch (e) { /* keep the static fallback values */ }
   }

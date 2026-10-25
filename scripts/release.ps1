@@ -6,11 +6,12 @@
 # Requires: the GNU Rust toolchain + Zig shims described in hub-desktop/README.md,
 # and the Tauri CLI installed globally (npm i -g @tauri-apps/cli).
 #
-# It does four things:
-#   1. cargo/tauri release build + NSIS bundle
+# It does five things:
+#   1. cargo/tauri release build + NSIS and MSI bundles
 #   2. portable ZIP with README.txt
-#   3. copies both artifacts into website/downloads with stable names
+#   3. copies all three artifacts into website/downloads with stable names
 #   4. rewrites website/version.json and SHA256SUMS.txt
+#   5. syncs the no-JS fallbacks in download.html
 
 param(
   [string]$Version = "",
@@ -37,12 +38,14 @@ try {
   $env:PATH = "$app\tools\bin;$env:PATH"
   $env:RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"
 
-  & $tauri build --bundles nsis
+  & $tauri build --bundles nsis,msi
   if ($LASTEXITCODE -ne 0) { throw "tauri build failed ($LASTEXITCODE)" }
 
   $release = Join-Path $app "src-tauri\target\release"
   $setupSrc = Join-Path $release "bundle\nsis\Agent Mark Hub_${Version}_x64-setup.exe"
   if (-not (Test-Path $setupSrc)) { throw "installer not found: $setupSrc" }
+  $msiSrc = Join-Path $release "bundle\msi\Agent Mark Hub_${Version}_x64_en-US.msi"
+  if (-not (Test-Path $msiSrc)) { throw "MSI not found: $msiSrc" }
 
   Write-Host "==> Packaging portable ZIP" -ForegroundColor Cyan
   $stage = Join-Path $env:TEMP "agm-portable\Agent-Mark-Hub-$Version"
@@ -81,6 +84,7 @@ Pilot preview: use synthetic data only until the external security audit closes.
   $dl = Join-Path $root "website\downloads"
   New-Item -ItemType Directory -Force -Path $dl | Out-Null
   Copy-Item $setupSrc (Join-Path $dl "Agent-Mark-Hub-$Version-x64-setup.exe") -Force
+  Copy-Item $msiSrc (Join-Path $dl "Agent-Mark-Hub-$Version-x64.msi") -Force
   Copy-Item $zip (Join-Path $dl "Agent-Mark-Hub-$Version-windows-x64-portable.zip") -Force
 } finally {
   Pop-Location

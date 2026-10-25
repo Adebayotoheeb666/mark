@@ -25,7 +25,7 @@ Install it once with `rustup toolchain install stable-x86_64-pc-windows-gnu --pr
 Data lives in `%APPDATA%\org.agentmark.hub\agent-mark-hub\hub.db` plus `backups\`. Delete that folder
 for a factory reset.
 
-## Package a release (installer + portable ZIP)
+## Package a release (NSIS + MSI + portable ZIP)
 
 The Tauri CLI is installed **globally** (`npm i -g @tauri-apps/cli`, v2.12.4), so no local
 `node_modules` is needed. PowerShell blocks npm's `tauri.ps1` shim under the default execution
@@ -36,20 +36,27 @@ policy — call **`tauri.cmd`** (or fix the policy with
 cd hub-desktop
 $env:PATH = "$PWD\tools\bin;$env:PATH"
 $env:RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"
-tauri build --bundles nsis
+tauri build --bundles nsis,msi
 ```
 
-Output: `src-tauri\target\release\bundle\nsis\Agent Mark Hub_0.1.0_x64-setup.exe` (per-user install,
-no admin prompt, WebView2 bootstrapper embedded). The bundler downloads NSIS 3.13 once and caches it
-under `%LOCALAPPDATA%\tauri`.
+Outputs:
 
-The whole release (installer + portable ZIP + website manifest) is one command from the repo root:
+- `src-tauri\target\release\bundle\nsis\Agent Mark Hub_0.1.0_x64-setup.exe` — per-user install,
+  no admin prompt, WebView2 bootstrapper embedded.
+- `src-tauri\target\release\bundle\msi\Agent Mark Hub_0.1.0_x64_en-US.msi` — per-machine install
+  (administrator required), suitable for Group Policy, Intune or SCCM.
+
+The bundler downloads NSIS 3.13 and WiX 3.14 once and caches them under `%LOCALAPPDATA%\tauri`.
+The WiX upgrade code is pinned in `tauri.conf.json` so MSI upgrades replace the old version instead
+of installing side by side.
+
+The whole release (NSIS + MSI + portable ZIP + website manifest) is one command from the repo root:
 
 ```powershell
 .\scripts\release.cmd
 ```
 
-That also copies both artifacts into `website/downloads/` and rewrites `website/version.json` +
+That also copies all three artifacts into `website/downloads/` and rewrites `website/version.json` +
 `SHA256SUMS.txt` from the real bytes. See `docs/PHASE_10_DISTRIBUTION.md`.
 
 **Portable build:** `agent-mark-hub.exe` needs `WebView2Loader.dll` beside it. The release script

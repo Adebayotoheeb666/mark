@@ -1,0 +1,11 @@
+{
+  "appId": "org.agentmark.companion",
+  "appName": "Agent Mark",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

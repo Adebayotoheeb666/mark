@@ -29,7 +29,7 @@ No `package.json` is required; Vercel treats the directory as static files.
 
 ### After the first deploy
 
-- The live production alias is `https://mark-tau-wheat.vercel.app/`, already used in
+- The live production alias is `https://mark-website-brown.vercel.app/`, already used in
   `sitemap.xml` and `robots.txt`. If a custom domain replaces it, update both files (or delete
   them if the site should not be indexed).
 - Keep **Root Directory** set to `website`. Changing it only affects *new* deployments, so
@@ -49,10 +49,11 @@ cd website
 vercel --prod
 ```
 
-`release.ps1` copies these two files into `downloads/` with stable names:
+`release.ps1` copies these three files into `downloads/` with stable names:
 
 ```
 downloads/Agent-Mark-Hub-<version>-x64-setup.exe
+downloads/Agent-Mark-Hub-<version>-x64.msi
 downloads/Agent-Mark-Hub-<version>-windows-x64-portable.zip
 ```
 
@@ -65,7 +66,7 @@ checksums always describe the published files.
 | Path | Purpose |
 | --- | --- |
 | `index.html` | Landing page: what it is, the no-AI/offline/privacy claims, screenshots |
-| `download.html` | Installer, portable ZIP, mobile app, live checksums |
+| `download.html` | NSIS installer, MSI, portable ZIP, mobile app, live checksums |
 | `install.html` | Install → first ten minutes → uninstall → troubleshooting |
 | `privacy.html` | Data locations, encrypted backups, signature verification, pilot gate |
 | `404.html` | Not-found page (Vercel serves it automatically) |

@@ -8,6 +8,7 @@ This phase turns the Hub source into three things a school can actually get hold
 | Artifact | Where | Size | Status |
 |---|---|---|---|
 | Windows installer (NSIS, per-user) | `website/downloads/Agent-Mark-Hub-0.1.0-x64-setup.exe` | 6,081,397 B (5.80 MB) | install → run → E2E → uninstall verified |
+| Windows MSI (per-machine) | `website/downloads/Agent-Mark-Hub-0.1.0-x64.msi` | 8,245,248 B (7.86 MB) | WiX build + administrative extract verified |
 | Portable ZIP | `website/downloads/Agent-Mark-Hub-0.1.0-windows-x64-portable.zip` | 6,054,793 B (5.77 MB) | contains exe + `WebView2Loader.dll` + README |
 | Mobile app (installable PWA) | `website/app/` | ~90 KB shell | score entry, flags, card preview; offline shell verified |
 | Download website (Vercel) | `website/` | static, no build step | all pages 200, no broken links, hashes hydrated from `version.json` |
@@ -22,7 +23,9 @@ no analytics, no third-party fonts. Deploy it by pointing Vercel at the `website
 ### What changed in the app
 
 - `src-tauri/tauri.conf.json` now configures a real bundle:
-  - `bundle.targets = ["nsis"]` (MSI/WiX is not built; WiX was unavailable on this network)
+  - `bundle.targets = ["nsis", "msi"]` — NSIS for per-user installs, WiX MSI for managed fleets
+  - `bundle.windows.wix.upgradeCode` is pinned (`27dcc818-5185-51ae-84a1-da0dea51df8c`) so an MSI
+    upgrade replaces the previous version instead of installing side by side
   - `bundle.icon = ["icons/icon.ico"]`
   - `installMode = "currentUser"` — **no administrator password** on school PCs
   - `webviewInstallMode = embedBootstrapper` — the WebView2 bootstrapper travels inside the
@@ -42,13 +45,17 @@ no analytics, no third-party fonts. Deploy it by pointing Vercel at the `website
 cd hub-desktop
 $env:PATH = "$PWD\tools\bin;$env:PATH"
 $env:RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"
-tauri build --bundles nsis
+tauri build --bundles nsis,msi
 ```
 
-The Tauri CLI (v2.12.4) downloads NSIS 3.13 and `nsis_tauri_utils.dll` from GitHub on first
-use, verifies their SHA-256, and caches them under `%LOCALAPPDATA%\tauri`. No WiX, no MSVC.
+The Tauri CLI (v2.12.4) downloads NSIS 3.13, `nsis_tauri_utils.dll` and WiX 3.14 from GitHub on
+first use, verifies their SHA-256, and caches them under `%LOCALAPPDATA%\tauri`. No MSVC is needed
+on this machine; the GNU-built exe is packaged by both bundlers.
 
-Output: `src-tauri/target/release/bundle/nsis/Agent Mark Hub_0.1.0_x64-setup.exe`.
+Outputs:
+
+- `src-tauri/target/release/bundle/nsis/Agent Mark Hub_0.1.0_x64-setup.exe`
+- `src-tauri/target/release/bundle/msi/Agent Mark Hub_0.1.0_x64_en-US.msi`
 
 ### Installer test (not just a compile)
 
@@ -59,6 +66,19 @@ Output: `src-tauri/target/release/bundle/nsis/Agent Mark Hub_0.1.0_x64-setup.exe
    signature, HTML without the DRAFT banner, 95-char comment, backup, drill, `go_live` → LIVE,
    35 audit rows. `verify_db.py` → `RESULT: PASS`.
 4. `uninstall.exe /S` → exit 0; install directory, Start-menu shortcut and desktop shortcut all gone.
+
+### MSI (managed deployment)
+
+`msiexec /a "Agent Mark Hub_0.1.0_x64_en-US.msi" /qn TARGETDIR=...` extracted the package to
+`PFiles\Agent Mark Hub\{agent-mark-hub.exe, WebView2Loader.dll}` and exited 0, so the WiX database
+and payload are valid. The MSI is **per-machine** (`ALLUSERS=1`) and needs administrator rights;
+the NSIS installer remains the no-admin option. Silent install for GPO/Intune/SCCM:
+
+```powershell
+msiexec /i Agent-Mark-Hub-0.1.0-x64.msi /qn
+```
+
+The package is unsigned, so SmartScreen/AppLocker policy applies exactly as for the `.exe`.
 
 ### Portable ZIP
 
@@ -161,7 +181,23 @@ tauri android build --apk
 ```
 
 This also needs a real sync/API surface on the hub (the current app has no network listener), so
-the APK is a Phase 11+ item, not a packaging step. The PWA is honest about being a companion.
+the native APK is a Phase 11+ item, not a packaging step. The PWA is honest about being a companion.
+
+### APK via GitHub Actions (Capacitor wrapper)
+
+GitHub-hosted `ubuntu-latest` already has the Android SDK, so the **existing PWA** can be packaged
+as an installable APK without touching this PC:
+
+- `mobile/` is a small Capacitor 8 project. `npm run sync-web` copies `website/app/` into `www/`
+  (the PWA remains the single source of truth); CI runs `cap add android`, `cap sync android`,
+  then `gradlew assembleDebug`.
+- The `android-apk` job in `.github/workflows/ci.yml` uploads `app-debug.apk` as the
+  `agent-mark-mobile-apk` artifact. It is **debug-signed** and offline; data stays in the phone's
+  `localStorage`, with no hub sync, signing or audit.
+- The wrapper is a distribution convenience for the companion, not the native Tauri client. The
+  WebView's `window.print()` is a no-op, so report printing stays on the desktop hub; JSON export
+  needs Capacitor Filesystem/Share before it is useful on Android.
+- Build/signing notes and limits: `mobile/README.md`.
 
 ---
 
@@ -199,15 +235,16 @@ the installer filename and the manifest cannot drift.
 
 1. **Unsigned installer** → SmartScreen "More info → Run anyway". A code-signing certificate is
    required before a frictionless school rollout.
-2. **No MSI/GPO package** yet; the NSIS installer is per-user only.
+2. **The MSI is per-machine and unsigned**; test it in a staging OU before a GPO/Intune rollout.
+   The NSIS installer remains the no-admin option for individual teachers.
 3. **Pilot gate is closed for real data**: no lock screen/roles enforced by the OS, signing key not
    passphrase-wrapped, backups are a summary payload rather than a full encrypted dump, external
    audit not closed.
 4. **Mobile rules are duplicated in JavaScript.** They match the Rust engine today and were checked
    against known values, but a shared rules fixture (golden vectors consumed by both) is needed to
    prevent drift.
-5. **`sitemap.xml` and `robots.txt` use the placeholder domain** `agent-mark.vercel.app`. Change
-   them when the real domain is attached.
+5. **`sitemap.xml` and `robots.txt` use the live Vercel alias** `mark-website-brown.vercel.app`.
+   Update both when a custom domain is attached.
 6. **The app cache is versioned by hand** (`app.js?v=0.1.2`, `agentmark-app-v4`). Bump both when
    the mobile shell changes.
 
@@ -215,7 +252,7 @@ the installer filename and the manifest cannot drift.
 
 ## 6. Next
 
-1. Code-sign the installer (EV certificate) and add an MSI for managed deployment.
+1. Code-sign the NSIS installer and MSI (EV certificate).
 2. Close the pilot-gate findings: operator accounts + passphrase-wrapped key, full encrypted backup
    dump and restore-into-fresh-DB, then the external audit.
 3. Native mobile client once an Android SDK machine is available — with a hub LAN API, not a
