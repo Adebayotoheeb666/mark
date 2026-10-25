@@ -101,6 +101,8 @@ jobs:
     # Wraps the canonical PWA (website/app) in a Capacitor Android shell. This is
     # the companion preview, not the Rust hub: no sync, no signing, no audit.
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed only for the tag-triggered GitHub Release below
     steps:
       - uses: actions/checkout@v4
 
@@ -151,3 +153,40 @@ jobs:
           name: agent-mark-mobile-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Stage APK for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSET="Agent-Mark-Mobile-${VERSION}-debug.apk"
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "$ASSET"
+          SHA="$(sha256sum "$ASSET" | awk '{print $1}')"
+          echo "$SHA" > apk.sha256
+          cat > release-notes.md <<EOF
+          Agent Mark mobile companion ${GITHUB_REF_NAME} - **debug-signed APK preview**.
+
+          This is the offline PWA companion wrapped with Capacitor, not the Rust hub.
+
+          - Data stays in the phone's localStorage; no hub sync, no signing, no audit.
+          - Printing and JSON export are limited in the Android WebView.
+          - Install with "Install unknown apps" allowed. Android 7+.
+          - Source: https://github.com/Adebayotoheeb666/mark/tree/${GITHUB_REF_NAME}/mobile
+          - SHA-256: ${SHA}
+          EOF
+          cat release-notes.md
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSET="Agent-Mark-Mobile-${VERSION}-debug.apk"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ASSET" \
+              --title "Agent Mark ${VERSION} - mobile APK (pilot)" \
+              --notes-file release-notes.md \
+              --prerelease
+          fi
