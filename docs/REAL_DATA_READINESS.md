@@ -34,7 +34,7 @@ distribution trust, external review, and school/legal operations — not the cor
 | Backup | Full encrypted snapshot (`AGMBK001`) + signed JSON manifest (schema, counts, SHA-256, timestamp, hub signature) + a `vault-BK-*.json` wrapped-key copy so a replacement PC can recover. | `backup_create`; Rust tests |
 | Restore / drill | Restore into a fresh in-memory DB; verify counts, digest and audit chain; only then replace live state. First-run disaster recovery restores from the backup folder when `hub.db` is missing. | `restore_backup`, `recover_from_backup`, `drill_run`; E2E |
 | Real-data mode | Defaults to `demo`; `real` requires zero demo rows, verified backup, passed drill, school name and privacy acknowledgment. | `enable_real_mode`; E2E |
-| Mobile local store | Passcode-derived key (PBKDF2-SHA-256, 310,000 iterations), AES-256-GCM envelope in `localStorage`, 8+ character passcode, 5-minute default auto-lock, lock button, wipe. | `website/app/app.js`; browser smoke |
+| Mobile local store | Passcode-derived key (PBKDF2-SHA-256, 310,000 iterations), AES-256-GCM envelope in `localStorage`, 8+ character passcode, 5-minute default auto-lock, lock button, wipe. Android shell hardened (no backup, no screenshots). | `website/app/app.js`; `scripts/patch_android_hardening.js`; browser smoke |
 | Mobile transfer | `AGMMOB01` file: salt(16) + IV(12) + AES-256-GCM ciphertext, separate 12+ character transfer passphrase, AAD `AGM-MOBILE-TRANSFER-V1`. Desktop import is admin-only, real-mode-gated, dry-run first, idempotent. | `mobile_import`; Rust cross-implementation fixture + E2E |
 | Installers | NSIS/MSI are still unsigned. | `website/downloads/` |
 | Android | Debug-signed APK by default. CI has an optional release-signing path once keystore secrets exist. | `.github/workflows/ci.yml` |
@@ -165,6 +165,11 @@ encrypted local store plus an explicit transfer step; it is not a second always-
 
 ### E. Distribution trust
 
+- [x] Android companion shell hardened at the platform level: `android:allowBackup="false"` +
+      `android:fullBackupContent="false"`, and `FLAG_SECURE` (no screenshots / screen recording) via
+      `mobile/scripts/patch_android_hardening.js`, run in CI before any APK build.
+- [x] PWA app shell served with a strict Content Security Policy (`default-src 'self'; script-src 'self';
+      style-src 'self' 'unsafe-inline'; ...), service worker cache bumped to `agentmark-app-v6`.
 - [ ] NSIS and MSI signed with an OV/EV code-signing certificate; signature verified on a clean PC.
 - [ ] MSI per-machine install tested by school IT; NSIS per-user install tested for non-admin PCs.
 - [ ] Release manifest and SHA-256 published; download page links the signed bytes.

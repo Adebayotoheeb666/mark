@@ -122,8 +122,9 @@ jobs:
           if-no-files-found: error
 
   android-apk:
-    # Wraps the canonical PWA (website/app) in a Capacitor Android shell. This is
-    # the companion preview, not the Rust hub: no sync, no signing, no audit.
+    # Wraps the canonical PWA (website/app) in a Capacitor Android shell. The companion holds only
+    # the passcode-encrypted local store (AES-256-GCM + PBKDF2) with an encrypted .agmm export to the
+    # desktop hub. No relay sync, no cloud storage, no signing, no audit for the companion itself.
     runs-on: ubuntu-latest
     permissions:
       contents: write # needed only for the tag-triggered GitHub Release below
@@ -169,6 +170,10 @@ jobs:
       - name: Sync Android project
         working-directory: mobile
         run: npx cap sync android
+
+      - name: Harden Android companion (no backups, no screenshots)
+        working-directory: mobile
+        run: node scripts/patch_android_hardening.js
 
       - name: Configure release signing
         if: env.AGM_ANDROID_KEYSTORE_BASE64 != ''

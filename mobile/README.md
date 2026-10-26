@@ -33,8 +33,9 @@ The `android-apk` job in `.github/workflows/ci.yml` builds `app-debug.apk` and u
 1. `npm ci`
 2. `npm run sync-web` — copies `website/app/` to `www/` (the PWA stays the single source of truth)
 3. `npx cap add android` + `npx cap sync android`
-4. `./gradlew assembleDebug` (or `assembleRelease` when signing secrets exist)
-5. On a `v*` tag, `gh release create` attaches the APK to a public prerelease.
+4. `node scripts/patch_android_hardening.js` — blocks Android cloud backup and screenshots (`FLAG_SECURE`)
+5. `./gradlew assembleDebug` (or `assembleRelease` when signing secrets exist)
+6. On a `v*` tag, `gh release create` attaches the APK to a public prerelease.
 
 Download the Actions artifact from the workflow run (GitHub sign-in required; artifacts expire
 after 90 days). The first verified run is
@@ -84,6 +85,12 @@ When `AGM_ANDROID_KEYSTORE_BASE64` is set, CI decodes the keystore, patches the 
 asset is named `Agent-Mark-Mobile-<version>.apk`; the debug fallback keeps the `-debug` suffix. Never
 commit the keystore. Keep at least two sealed copies and record the SHA-256 of each release APK.
 
+The CI job also runs `scripts/patch_android_hardening.js` before any build, which sets
+`android:allowBackup="false"` plus `android:fullBackupContent="false"` and adds `FLAG_SECURE` (no
+screenshots / screen recording of the app window) to the generated Android shell. These hardening
+patches apply to the debug build too, since the companion must never be backed up to device/cloud
+storage while it holds an encrypted student store.
+
 ## Known limits
 
 - `window.print()` is not implemented by the Android WebView, so the card's Print button is a
@@ -93,4 +100,5 @@ commit the keystore. Keep at least two sealed copies and record the SHA-256 of e
 - The wrapper is the PWA, not the Rust hub: no roster sync, no Ed25519 signing, no backup/audit.
 - The generated project uses Capacitor's default launcher icon and splash; custom Agent Mark
   icons are a follow-up.
-- The PWA cache version is still manual (`website/app/sw.js`); bump it when the shell changes.
+- The PWA cache version is still manual (`website/app/sw.js`); bump it when the shell changes. It is
+  currently `agentmark-app-v6`.

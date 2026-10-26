@@ -2,7 +2,7 @@
  * Cache-first for same-origin GETs inside /app/, with a network refresh in the background.
  * No third-party requests are made or cached.
  */
-const CACHE = "agentmark-app-v5";
+const CACHE = "agentmark-app-v6";
 const ASSETS = [
   "./",
   "./index.html",
