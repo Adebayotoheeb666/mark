@@ -20,6 +20,18 @@ function toast(msg, bad) {
   t._h = setTimeout(() => (t.style.display = "none"), 5200);
 }
 
+function downloadText(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 async function call(fn, args, okMsg) {
   try {
     const r = await inv(fn, args || {});
@@ -299,7 +311,7 @@ async function render() {
     else if (SEC === "users") v.innerHTML = await users();
     else if (SEC === "account") v.innerHTML = await account();
     else v.innerHTML = await dash();
-    if (SEC === "scores") scoreLabels();
+    if (SEC === "scores") { scoreLabels(); corLabels(); }
   } catch (e) {
     v.innerHTML = `<div class='card blocking'>${esc(e)}</div>`;
   }
@@ -357,12 +369,16 @@ async function doSchool() {
 /* ---------- students ---------- */
 async function students() {
   const list = await inv("students");
-  const rows = list.map((s) => `<tr><td>${esc(s.short_code)}</td><td>${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.class)}</td></tr>`).join("");
+  const isAdmin = SESSION.role === "admin";
+  const rows = list.map((s) => `<tr><td>${esc(s.short_code)}</td><td>${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.class)}</td>
+    <td>${isAdmin ? `<button class="act ghost" onclick="doEditStudent('${jsq(s.short_code)}')">Edit</button>
+      <button class="act ghost" onclick="doExportStudent('${jsq(s.short_code)}')">Export</button>
+      <button class="act danger" onclick="doDeleteStudent('${jsq(s.short_code)}')">Delete</button>` : "—"}</td></tr>`).join("");
   const canImport = SESSION.role === "admin" && DASH && DASH.live;
   return `<div class="card"><h2>Students (${list.length})</h2>
-    <table><tr><th>Code</th><th>Name</th><th>Class</th></tr>${rows || "<tr><td colspan=3>No students — load demo or import.</td></tr>"}</table></div>
+    <table><tr><th>Code</th><th>Name</th><th>Class</th><th>Data actions</th></tr>${rows || "<tr><td colspan=4>No students — load demo or import.</td></tr>"}</table></div>
   <div class="card"><h2>CSV roster import</h2>
-    <p class="muted small">Header: <code>short_code,first_name,last_name,class_label</code>. Dry-run first. Real import is admin-only and requires REAL DATA MODE.</p>
+    <p class="muted small">Header: <code>short_code,first_name,last_name,class_label</code>. Quoted fields and commas inside quotes are supported. Dry-run first. Real import is admin-only and requires REAL DATA MODE.</p>
     <textarea id="csv" rows="6" class="wide-input" placeholder="short_code,first_name,last_name,class_label&#10;26-JSS2A-007,Adaeze,Demo,JSS2-A"></textarea>
     <div class="actions">
       <button class="act ghost" onclick="doImport(true)">Dry-run check</button>
@@ -370,6 +386,9 @@ async function students() {
     </div>
     ${canImport ? "" : `<p class="warning small">Real import is locked. Complete the backup gate and enable real data first.</p>`}
     <div id="imp"></div></div>
+  <div class="card"><h2>Data lifecycle</h2>
+    <p class="muted small">Admins can correct a student's details, export a data-subject file, or permanently delete a student and their live scores, comments, flags and reports. Deletion is audited. Encrypted backups remain until they age out under the school's retention schedule.</p>
+    <p class="muted small">Export files contain personal data. Store them in the school's approved secure location and delete them when no longer needed.</p></div>
   <div class="card"><h2>Import from phone (.agmm)</h2>
     <p class="muted small">Encrypted transfer file from the mobile companion. Enter the transfer passphrase set on the phone — not the desktop password. Dry-run first; real import is admin-only and requires REAL DATA MODE.</p>
     <input type="file" id="agmm-file" accept=".agmm,application/octet-stream">
@@ -379,6 +398,37 @@ async function students() {
       <button class="act" ${canImport ? "" : "disabled"} onclick="doMobileImport(false)">Import from phone</button>
     </div>
     <div id="mimp"></div></div>`;
+}
+
+async function doEditStudent(code) {
+  const list = await inv("students");
+  const s = list.find((x) => x.short_code === code);
+  if (!s) { toast("Student not found.", true); return; }
+  const first = prompt(`First name for ${code}`, s.first);
+  if (first === null) return;
+  const last = prompt(`Last name for ${code}`, s.last);
+  if (last === null) return;
+  const cls = prompt(`Class label for ${code}`, s.class);
+  if (cls === null) return;
+  const r = await call("student_update", { shortCode: code, first, last, class: cls }, "Student updated.");
+  if (r) { DASH = null; render(); }
+}
+
+async function doExportStudent(code) {
+  if (!confirm(`Export all stored data for ${code}? The file contains personal data.`)) return;
+  const data = await call("student_export", { shortCode: code });
+  if (!data) return;
+  downloadText(`student-${code}-export.json`, data, "application/json");
+  toast("Export created. Store it securely and delete it when no longer needed.");
+}
+
+async function doDeleteStudent(code) {
+  if (!confirm(`Delete ${code} and all live scores, comments, flags and reports? This cannot be undone from the app. Encrypted backups may still contain the record.`)) return;
+  const typed = prompt(`Type ${code} exactly to confirm permanent deletion:`);
+  if (typed === null) return;
+  if (typed.trim() !== code) { toast("Confirmation did not match. Nothing was deleted.", true); return; }
+  const r = await call("student_delete", { shortCode: code, confirmCode: typed.trim() });
+  if (r) { toast(r); DASH = null; render(); }
 }
 
 async function doImport(dry) {
@@ -438,7 +488,20 @@ async function scores() {
       <input id="sc-val" size="6" placeholder="17">
       <button class="act" onclick="doAdd()">Save</button>
     </div>
-    <p class="muted small">Range-checked instantly (VAL-RANGE-01); conflicting entries are refused (VAL-DUP-01). Every save is audited to your account.</p></div>` : `<div class="card"><p class="muted">Your role is read-only for score entry.</p></div>`}
+    <p class="muted small">Range-checked instantly (VAL-RANGE-01); conflicting entries are refused (VAL-DUP-01). Every save is audited to your account.</p></div>
+  <div class="card"><h2>Correct or remove a score</h2>
+    <div class="actions">
+      <input id="cor-stu" size="14" placeholder="student code">
+      <select id="cor-sub" onchange="corLabels()"><option>MATHS</option><option>ENG</option></select>
+      <span id="cor-labels"></span>
+      <input id="cor-val" size="6" placeholder="new value">
+    </div>
+    <div class="actions">
+      <input id="cor-reason" class="grow" maxlength="240" placeholder="Reason (8+ characters, recorded in the audit trail)">
+      <button class="act" onclick="doCorrect()">Save correction</button>
+      ${SESSION.role === "admin" ? `<button class="act danger" onclick="doDeleteScore()">Delete all versions</button>` : ""}
+    </div>
+    <p class="muted small">Corrections append an immutable version; prior values stay in the audit trail. Re-draft affected reports after a correction. Deleting all versions is admin-only and is intended for a wrong-student or wrong-assessment entry.</p></div>` : `<div class="card"><p class="muted">Your role is read-only for score entry.</p></div>`}
   <div class="card"><h2>Results (deterministic)</h2>
     <table><tr><th>Code</th><th>Name</th><th>MATHS</th><th>ENG</th><th>Overall</th><th>Pos</th></tr>${rows || "<tr><td colspan=6>No complete results yet.</td></tr>"}</table></div>`;
 }
@@ -451,6 +514,14 @@ function scoreLabels() {
   if (el) el.innerHTML = `Assessment <select id="sc-lab">${labels.map((l, i) => `<option value="${l}">${l} (max ${maxs[i]})</option>`).join("")}</select>`;
 }
 
+function corLabels() {
+  const subj = document.querySelector("#cor-sub")?.value || "MATHS";
+  const labels = subj === "MATHS" ? ["CA1", "CA2", "Exam"] : ["CA", "Exam"];
+  const maxs = subj === "MATHS" ? [20, 20, 60] : [40, 60];
+  const el = document.querySelector("#cor-labels");
+  if (el) el.innerHTML = `Assessment <select id="cor-lab">${labels.map((l, i) => `<option value="${l}">${l} (max ${maxs[i]})</option>`).join("")}</select>`;
+}
+
 async function doAdd() {
   const r = await call("score_add", {
     student: $("#sc-stu").value.trim(),
@@ -459,6 +530,29 @@ async function doAdd() {
     value: parseFloat($("#sc-val").value),
   }, "Score saved.");
   if (r) { DASH = null; render(); }
+}
+
+async function doCorrect() {
+  const r = await call("score_update", {
+    student: $("#cor-stu").value.trim(),
+    subject: $("#cor-sub").value,
+    label: $("#cor-lab").value,
+    value: parseFloat($("#cor-val").value),
+    reason: $("#cor-reason").value.trim(),
+  }, "Score corrected.");
+  if (r) { DASH = null; render(); }
+}
+
+async function doDeleteScore() {
+  const student = $("#cor-stu").value.trim();
+  const subject = $("#cor-sub").value;
+  const label = $("#cor-lab").value;
+  const reason = $("#cor-reason").value.trim();
+  if (!student) { toast("Enter the student code first.", true); return; }
+  if (reason.length < 8) { toast("Enter an 8+ character reason first.", true); return; }
+  if (!confirm(`Delete every stored version for ${student} ${subject}/${label}? Reports already drafted are not changed.`)) return;
+  const r = await call("score_delete", { student, subject, label, reason });
+  if (r) { toast(r); DASH = null; render(); }
 }
 
 /* ---------- flags ---------- */
@@ -620,6 +714,7 @@ async function backup() {
       ${!d.privacy_ack ? `<button class="act ghost" onclick="doPrivacy()">4. Acknowledge privacy notice</button>` : ""}
       <button class="act" ${d.backup_verified && d.drill_passed && d.privacy_ack && !d.live ? "" : "disabled"} onclick="doEnableReal()">5. Enable real data</button>
       <button class="act danger" onclick="doRestore()">Restore latest…</button>
+      <button class="act danger" ${(d.students + d.scores + d.reports) > 0 ? "" : "disabled"} onclick="doPurgeAll()">Purge all live data…</button>
     </div>` : `<p class="muted">Only an admin can create, verify, drill or restore backups.</p>`}
   </div>
   <div class="card"><h2>Backup history</h2>
@@ -676,6 +771,15 @@ async function doRestore() {
   const r = await call("restore_backup", {}, null);
   if (r) { toast(r); DASH = null; render(); }
 }
+async function doPurgeAll() {
+  if (!confirm("Purge every student, score, flag, comment and report from the live database? The audit log is retained. Backups are not deleted.")) return;
+  if (!confirm("Second confirmation: this cannot be undone from the app. Continue?")) return;
+  const typed = prompt("Type PURGE exactly to confirm:");
+  if (typed === null) return;
+  if (typed.trim() !== "PURGE") { toast("Confirmation did not match. Nothing was purged.", true); return; }
+  const r = await call("purge_all_data", { confirm: typed.trim() });
+  if (r) { toast(r); DASH = null; render(); }
+}
 
 /* ---------- users ---------- */
 async function users() {
@@ -719,10 +823,16 @@ async function doRemoveUser(username) {
 
 /* ---------- account / audit ---------- */
 async function account() {
+  let fp = "";
+  try { fp = await inv("hub_fingerprint"); } catch (e) { fp = String(e); }
   return `<div class="card"><h2>My account</h2>
     <p><b>${esc(SESSION.username)}</b> · ${esc(roleLabel(SESSION.role))}</p>
     <p class="muted small">Sessions lock automatically after 15 minutes of inactivity. Use Lock when leaving the PC.</p>
     <button class="act ghost" onclick="lockApp()">Lock now</button></div>
+  <div class="card"><h2>Hub signing key fingerprint</h2>
+    <p class="mono" id="hub-fp">${esc(fp)}</p>
+    <p class="muted small">Read this fingerprint out-of-band when verifying a signed report. It is derived from the hub's Ed25519 public key and is not secret. Record it in the school's report-verification log.</p>
+    <button class="act ghost" onclick="refreshFingerprint()">Refresh</button></div>
   <div class="card"><h2>Change password</h2>
     <form onsubmit="doChangePassword(event,true)">
       <label class="field">Current password<input id="ac-old" type="password" required autocomplete="current-password"></label>
@@ -730,6 +840,11 @@ async function account() {
       <label class="field">Confirm new password<input id="ac-confirm" type="password" minlength="12" required autocomplete="new-password"></label>
       <button class="act" type="submit">Change password</button>
     </form></div>`;
+}
+
+async function refreshFingerprint() {
+  const fp = await call("hub_fingerprint");
+  if (fp) $("#hub-fp").textContent = fp;
 }
 
 async function audit() {

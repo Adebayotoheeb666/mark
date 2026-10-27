@@ -71,14 +71,29 @@ The bundler downloads NSIS 3.13 and WiX 3.14 once and caches them under `%LOCALA
 The WiX upgrade code is pinned in `tauri.conf.json` so MSI upgrades replace the old version instead
 of installing side by side.
 
-The whole release (NSIS + MSI + portable ZIP + website manifest) is one command from the repo root:
+The whole release (NSIS + MSI + portable ZIP + website manifest) is one command from the repo root.
+**Production releases require a code-signing identity.** The script refuses to build without one
+unless you explicitly opt into an unsigned internal pilot build:
 
 ```powershell
+# Production: OV/EV certificate installed in the current user's certificate store.
+$env:AGM_SIGN_THUMBPRINT = "<SHA-1 thumbprint>"
 .\scripts\release.cmd
+
+# Alternative: PFX + password from the environment (never put the password in a command line).
+$env:AGM_SIGN_PFX = "C:\secure\agent-mark-ov.pfx"
+$env:AGM_SIGN_PASSWORD = "..."
+.\scripts\release.cmd
+
+# Internal pilot only: unsigned, clearly marked, not for public distribution.
+.\scripts\release.cmd -AllowUnsigned -OutDir pilot-dist
 ```
 
-That also copies all three artifacts into `website/downloads/` and rewrites `website/version.json` +
-`SHA256SUMS.txt` from the real bytes. See `docs/PHASE_10_DISTRIBUTION.md`.
+`release.ps1` injects `scripts\sign-windows.ps1` as Tauri's `bundle.windows.signCommand`, then signs
+and verifies the app exe, NSIS installer, and MSI with `signtool`. If signing fails, the release
+fails. The default output goes to `website/downloads/` and rewrites `website/version.json` +
+`SHA256SUMS.txt` from the real bytes; `-OutDir` keeps an internal pilot build out of the public
+manifest. See `docs/PHASE_10_DISTRIBUTION.md` and `docs/PILOT_DEPLOYMENT_RUNBOOK.md`.
 
 **Portable build:** `agent-mark-hub.exe` needs `WebView2Loader.dll` beside it. The release script
 copies both into the ZIP; a bare exe copied on its own will fail to start.
@@ -148,9 +163,14 @@ entirely, delete `.cargo/config.toml`, and build with the default MSVC toolchain
 3. **Dashboard** → `Load demo school (6 students)`. Readiness shows the real-data gate (backup, drill,
    privacy acknowledgment, demo cleared).
 4. **Students** → try CSV import with one valid row + one duplicate: the duplicate must appear in the
-   dry-run errors and *nothing* may be written. Real import is admin-only and requires real mode.
+   dry-run errors and *nothing* may be written. Quoted fields (for example `"Ada, Jr."`) are parsed
+   correctly. As admin, use **Edit**, **Export**, or **Delete** on a row. Delete requires typing the
+   student code and removes live scores/comments/flags/reports; the audit log and encrypted backups
+   remain.
 5. **Scores** → enter `26-JSS2A-001` `MATHS/CA1` = `17`. Then try `99` → `VAL-RANGE-01` refusal.
    Enter the same score twice with a different value → `VAL-DUP-01` refusal (no silent overwrite).
+   Use **Correct or remove a score** with an 8+ character reason: a correction appends an immutable
+   version; **Delete all versions** is admin-only.
 6. **Flags** → the inbox lists blocking `VAL-MISS-01` rows. `Confirm…` must demand a reason;
    `Correct`/`Escalate` resolve without one. Flags never change a score.
 7. **Comments** → pick subject/band, choose a sentence, edit, save. Length gate blocks >210 chars.
@@ -159,9 +179,12 @@ entirely, delete `.cargo/config.toml`, and build with the default MSVC toolchain
    print sheet — unlocked reports print a red **DRAFT — NOT OFFICIAL** banner.
 9. **Backup & real-data gate** → `Clear demo`, `Backup now`, `Verify latest`, `Run restore drill`,
    acknowledge the privacy notice, then `Enable real data`. The app refuses to enable real mode until
-   every gate is true.
+   every gate is true. The dashboard warns when the last backup is over 24 hours old, over 7 days old,
+   or the last drill is over 30 days old. **Purge all live data** is a separate, double-confirmed
+   offboarding action that keeps the audit log and does not delete backups.
 10. **Audit** → every action above appears in the hash-chained log (each row hashes the previous
-    hash, so tampering with history is detectable).
+    hash, so tampering with history is detectable). **Account** shows the hub signing-key fingerprint
+    to read out-of-band when verifying a signed report.
 
 ## Headless verification (no clicking)
 
@@ -176,7 +199,10 @@ These scripts check the build through the DevTools bridge and, for the UI tests,
 - `python tools\e2e_smoke.py 9223` - connects to the running app through WebView2's DevTools
   protocol and calls the same `invoke` bridge the UI uses, exercising setup, roles, wrong password,
   demo clearing, backup, verify, drill, real mode, mobile `.agmm` import, and disaster recovery.
-- `python tools\ui_smoke.py 9224` - drives the real WebView setup/login/lock/auto-lock screens.
+- `python tools\ui_smoke.py 9224` - drives the real WebView setup/login/lock/auto-lock screens and
+  checks the student lifecycle actions and signing-key fingerprint.
+- `python tools\lifecycle_smoke.py 9236` - exercises quoted CSV parsing, student edit/export/delete,
+  score correction/deletion, hub fingerprint, audit entries, and the offboarding purge.
 - `python tools\recover_smoke.py 9225` - starts from a backup kit with no `hub.db`/`vault.json`
   (including `.bak`) and proves vault adoption plus restore.
 - `python tools\test_override_smoke.py 9230` - with `AGM_TEST_ALLOW_REAL_DATA=1` on a debug build,
@@ -213,20 +239,30 @@ screen. The E2E creates its own admin account and does not need `AGM_AUTO_DEMO`.
 - Backups are full encrypted snapshots with signed manifests; verify, restore-to-fresh, and drill
   check counts, digest, and the audit chain. A backup kit also carries `vault-BK-*.json` so a new PC
   can recover after losing `hub.db`.
+- Student data lifecycle is audited: admin-only edit, JSON data-subject export, delete-with-code
+  confirmation, score correction as an immutable new version, admin-only score deletion, and a
+  double-confirmed live-data purge that keeps the audit log and leaves backups alone.
+- The account screen shows a SHA-256 fingerprint of the hub's Ed25519 public key for out-of-band
+  report verification.
 - Real-data mode defaults to off and requires zero demo rows, a verified backup, a passed drill,
-  school details, and a privacy acknowledgment.
+  school details, and a privacy acknowledgment. The dashboard warns about stale backups and drills.
 - Weight sums are checked per subject; a bad weight table blocks reports instead of guessing.
 - Audit rows are hash-chained (`prev_hash` → `hash`), so edits break the chain.
 
 ## Known gaps before real student data
 
-- No code-signing certificate yet; Windows SmartScreen warns on the installers.
+- No OV/EV code-signing certificate has been issued yet. The release pipeline now requires and
+  verifies a signature by default; `-AllowUnsigned` exists only for internal pilot builds, and
+  Windows SmartScreen warns on unsigned artifacts.
 - No independent security review yet. Engineering tests are green; that is not an audit.
-- Retention/pruning, data-subject export/correction/erasure, and offboarding wipe are documented as
-  requirements but not implemented as one-click features.
-- No automatic backup scheduler, stale-backup block, key rotation, or account-removal UI.
+- No automatic backup scheduler or automatic retention/pruning. Stale-backup warnings are in the UI,
+  and the retention schedule is a school procedure in the pilot pack; a human must still prune and
+  store backups.
+- No data-key rotation after a staff departure. The procedure is: remove the account, rotate every
+  remaining password, destroy old backups under the retention policy, and treat any access to prior
+  backups as a potential incident. See the pilot runbook.
 - No relay/LAN sync client, no QR scanner, no PDF export (print-only MVP per ADR-0007).
 - The Android APK is debug-signed until the keystore secrets are configured; the published 0.1.0 APK
-  predates the encrypted mobile store.
+  predates the encrypted mobile store. A release-signed 0.2.0 APK is still an external gate.
 - Real PII must stay out until the independent review and school/legal gates close. See
-  `docs/REAL_DATA_READINESS.md`.
+  `docs/REAL_DATA_READINESS.md` and `docs/PILOT_DEPLOYMENT_RUNBOOK.md`.

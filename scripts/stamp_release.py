@@ -15,7 +15,8 @@ import argparse
 import hashlib
 import json
 import re
-from datetime import date
+import subprocess
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,6 +29,18 @@ def digest(path: Path) -> tuple[int, str]:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return path.stat().st_size, h.hexdigest()
+
+
+def git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return ""
 
 
 def sync_version_text(manifest: dict) -> None:
@@ -92,6 +105,10 @@ def main() -> int:
     ap.add_argument("--version", default="0.1.0")
     ap.add_argument("--channel", default="pilot")
     ap.add_argument("--notes", default="")
+    ap.add_argument("--signed", dest="signed", action="store_true", help="Windows artifacts are code-signed")
+    ap.add_argument("--unsigned", dest="signed", action="store_false", help="Internal unsigned pilot build")
+    ap.add_argument("--signing-status", default="unsigned")
+    ap.set_defaults(signed=False)
     args = ap.parse_args()
 
     v = args.version
@@ -151,9 +168,24 @@ def main() -> int:
             "ai": False,
             "network_calls_for_student_data": False,
         },
+        "build": {
+            "git_commit": git_commit(),
+            "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "signing": {
+                "signed": bool(args.signed),
+                "status": args.signing_status,
+            },
+        },
         "pilot_gate": {
             "real_student_data_allowed": False,
-            "reason": "External security review has not closed the open findings; no Windows code-signing certificate yet; the published APK is debug-signed.",
+            "reason": (
+                "External security review has not closed the open findings; "
+                + (
+                    "the Windows artifacts are code-signed, but the published APK is still debug-signed."
+                    if args.signed
+                    else "the Windows artifacts are unsigned (internal pilot only)."
+                )
+            ),
         },
     }
 

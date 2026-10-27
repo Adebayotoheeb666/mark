@@ -9,8 +9,11 @@ Local-first school records & report-card system (No-AI).
 - `Agent_Mark_THREAT_MODEL_PRIVACY.md`, `Agent_Mark_TEST_STRATEGY.md`
 - `Agent_Mark_BACKUP_RESTORE_RUNBOOK.md`, `Agent_Mark_PILOT_CHARTER.md`, `Agent_Mark_AUDITOR_SOW.md`, `Agent_Mark_PARENT_NOTICE_CONSENT.md`
 - `docs/REAL_DATA_READINESS.md` — **hard gate for the first real-student pilot.** The desktop technical
-  core (accounts, encrypted vault, backup/drill/restore, mobile transfer) is implemented and tested;
-  signing, independent review, and school/legal gates remain open, so real PII is still blocked.
+  core (accounts, encrypted vault, backup/drill/restore, mobile transfer, data lifecycle) is
+  implemented and tested; signing, independent review, and school/legal gates remain open, so real
+  PII is still blocked.
+- `docs/PILOT_DEPLOYMENT_RUNBOOK.md` and `docs/pilot-pack/` — school deployment, DPIA, authorization,
+  notices, retention, incident, data-subject, training, and sign-off templates.
 
 ## Layout
 ```
@@ -53,12 +56,22 @@ in `website/downloads/` **are** committed on purpose — Vercel serves them dire
 
 ## Ship a release
 ```powershell
-.\scripts\release.cmd          # build + NSIS/MSI installers + portable ZIP + website manifest
+# Production releases require a signing identity (OV/EV certificate).
+$env:AGM_SIGN_THUMBPRINT = "<SHA-1 thumbprint>"
+.\scripts\release.cmd          # build + sign + NSIS/MSI + portable ZIP + website manifest
 cd website; vercel --prod      # deploy the static site
 ```
 Artifacts land in `website/downloads/`; `website/version.json` and `SHA256SUMS.txt` are regenerated
-from the actual bytes, and `download.html` reads them at runtime (no hash edits in HTML).
-Details: `docs/PHASE_10_DISTRIBUTION.md` and `website/README.md`.
+from the actual bytes, and `download.html` reads them at runtime (no hash edits in HTML). The release
+script refuses to build a production release without `AGM_SIGN_THUMBPRINT` or
+`AGM_SIGN_PFX`/`AGM_SIGN_PASSWORD`. For an internal pilot candidate that must not touch the public
+manifest:
+
+```powershell
+.\scripts\release.cmd -AllowUnsigned -OutDir pilot-dist
+```
+
+Details: `docs/PHASE_10_DISTRIBUTION.md`, `docs/PILOT_DEPLOYMENT_RUNBOOK.md`, and `website/README.md`.
 (`release.cmd` is a wrapper around `release.ps1` with `-ExecutionPolicy Bypass`; this PC refuses to
 run `.ps1` files directly.)
 
@@ -70,9 +83,10 @@ builds a release-signed APK instead; see `mobile/README.md`.
 
 ## Tests
 ```powershell
-cd hub-desktop\src-tauri; cargo test                 # 14 crypto/backup/mobile-format tests
+cd hub-desktop\src-tauri; cargo test                 # 17 crypto/backup/CSV/mobile-format tests
 cd hub-desktop; python tools\e2e_smoke.py 9223       # auth, roles, gate, backup/drill/recover, mobile import
-cd hub-desktop; python tools\ui_smoke.py 9224        # real WebView setup/login/lock/auto-lock
+cd hub-desktop; python tools\ui_smoke.py 9224        # real WebView setup/login/lock + lifecycle/fingerprint UI
+cd hub-desktop; python tools\lifecycle_smoke.py 9236 # CSV, correction/export/delete, purge, audit
 cd hub-desktop; python tools\recover_smoke.py 9225   # missing hub.db/vault.json/.bak -> restore from backup kit
 cd hub-desktop; python tools\test_override_smoke.py 9230  # debug-only audited real-data test override
 cd hub-desktop; python tools\test_override_ui_smoke.py 9234  # TEST DATA badge/banner/dashboard stat

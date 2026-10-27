@@ -86,9 +86,9 @@
     <p>Open items, stated plainly:</p>
     <ul>
       <li><strong>No independent security review yet.</strong> The engineering tests are green; that is not the same as an audit.</li>
-      <li><strong>No code-signing certificate</strong> on the Windows installers, so SmartScreen warns on first run.</li>
+      <li><strong>No code-signing certificate</strong> has been issued for the Windows installers yet, so SmartScreen warns on first run. The release pipeline now requires and verifies a signature; an unsigned internal pilot build is clearly marked.</li>
       <li><strong>The published APK is debug-signed.</strong> CI has a release-signing path once a keystore is configured, but that keystore is not yet held.</li>
-      <li><strong>Retention, data-subject export/correction/erasure, and offboarding wipe</strong> are documented as requirements but not yet implemented and tested.</li>
+      <li><strong>Retention/pruning is manual.</strong> Data-subject export, correction, deletion, offboarding purge, stale-backup warnings, and restore-to-a-new-PC are implemented and tested; the school still owns the retention schedule and physical backup destruction.</li>
       <li><strong>The school/legal pack</strong> (authorization, DPIA, DPA, notices, training) is not signed.</li>
     </ul>
     <p>The threat model, the test strategy and the backup/restore runbook are maintained in the project repository alongside the source. The detailed gate is in <code>docs/REAL_DATA_READINESS.md</code>.</p>

@@ -44,9 +44,19 @@ and fills every size, full hash, short hash and copy button from it.
 
 ```powershell
 # from the repo root
-.\scripts\release.cmd                     # build + bundle + stage + stamp
+$env:AGM_SIGN_THUMBPRINT = "<SHA-1 thumbprint of the installed OV/EV certificate>"
+# or: $env:AGM_SIGN_PFX / $env:AGM_SIGN_PASSWORD
+.\scripts\release.cmd                     # build + sign + bundle + stage + stamp
 cd website
 vercel --prod
+```
+
+`release.ps1` refuses to build a production release without a signing identity. It signs and
+verifies the app exe, NSIS installer, and MSI with `signtool`. For an internal pilot candidate that
+must not update the public manifest:
+
+```powershell
+.\scripts\release.cmd -AllowUnsigned -OutDir pilot-dist
 ```
 
 `release.ps1` copies these three files into `downloads/` with stable names:
@@ -95,12 +105,12 @@ The service worker and the install prompt need `http://localhost` or HTTPS; open
 
 ## Mobile app notes
 
-- `app/sw.js` caches the shell under `agentmark-app-v4`. When `app.js`, `app.css` or
+- `app/sw.js` caches the shell under `agentmark-app-v6`. When `app.js`, `app.css` or
   `app/index.html` change, bump **both** the cache name and the `?v=` query in
   `app/index.html` (and in `sw.js`'s asset list), otherwise installed copies keep the old shell.
-- The PWA stores data in `localStorage` under `agentmark.mobile.v1`. It never talks to the hub
-  and never sends anything over the network. The site's CSP (`connect-src 'self'`) keeps it
-  that way even if a bug tried.
+- The PWA stores data in `localStorage` under the encrypted `agentmark.mobile.v2` envelope. It never
+  talks to the hub and never sends anything over the network. The site's CSP (`connect-src 'self'`)
+  keeps it that way even if a bug tried.
 - The install button only appears when the browser fires `beforeinstallprompt`; on iOS use
   Safari → Share → **Add to Home Screen**.
 

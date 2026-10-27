@@ -48,3 +48,4 @@ desktop.ini
 website/.vercel/
 *.log
 *.tmp
+/pilot-dist/

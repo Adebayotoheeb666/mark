@@ -34,6 +34,8 @@
       wire("setup", w.installer);
       wire("msi", w.msi);
       wire("portable", w.portable);
+      var signing = (v.build && v.build.signing) || {};
+      set("signing-status", signing.signed ? "signed Windows build" : (signing.status || "unsigned build"));
     } catch (e) { /* keep the static fallback values */ }
   }
   hydrateRelease();

@@ -233,16 +233,20 @@ add keystore secrets plus a release signing block (see `mobile/README.md`).
 
 ```powershell
 # 1. bump the version in src-tauri/tauri.conf.json (and Cargo.toml)
-# 2. build + bundle + stage + stamp, all in one:
-.\scripts\release.cmd          # .cmd wrapper: works when .ps1 files are blocked
+# 2. configure the signing identity (production)
+$env:AGM_SIGN_THUMBPRINT = "<SHA-1 thumbprint of the installed OV/EV cert>"
+#    or: $env:AGM_SIGN_PFX = "C:\secure\agent-mark-ov.pfx"; $env:AGM_SIGN_PASSWORD = "..."
 
-#    if your execution policy allows scripts, the .ps1 is equivalent:
-.\scripts\release.ps1
+# 3. build + bundle + sign + stage + stamp, all in one:
+.\scripts\release.cmd          # .cmd wrapper: works when .ps1 files are blocked
 
 #    explicit version/notes:
 .\scripts\release.cmd -Version 0.1.0 -Notes "First packaged pilot build."
 
-# 3. deploy the static site
+#    internal pilot only (unsigned, not published to website/version.json):
+.\scripts\release.cmd -AllowUnsigned -OutDir pilot-dist
+
+# 4. deploy the static site
 cd website
 vercel --prod
 ```
@@ -252,37 +256,45 @@ runs. `release.cmd` invokes it with `-ExecutionPolicy Bypass`; use that, or set
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
 
 `scripts/release.ps1` refuses to run if the requested version differs from `tauri.conf.json`, so
-the installer filename and the manifest cannot drift.
+the installer filename and the manifest cannot drift. It also refuses to build a production release
+without `AGM_SIGN_THUMBPRINT` or `AGM_SIGN_PFX` unless `-AllowUnsigned` is passed. The signing script
+signs and verifies the app exe, NSIS installer, and MSI with `signtool`; a failure aborts the release.
 
-`scripts/stamp_release.py` recomputes sizes and SHA-256 from the actual files and rewrites
-`website/version.json` + `website/downloads/SHA256SUMS.txt`.
+`scripts/stamp_release.py` recomputes sizes and SHA-256 from the actual files, records the git commit,
+build time, and signing status, and rewrites `website/version.json` +
+`website/downloads/SHA256SUMS.txt`. `-OutDir` skips the website manifest and writes a local
+`SHA256SUMS.txt` instead.
 
 ---
 
 ## 5. Known limits (stated on the site too)
 
-1. **Unsigned installer** → SmartScreen "More info → Run anyway". A code-signing certificate is
-   required before a frictionless school rollout.
-2. **The MSI is per-machine and unsigned**; test it in a staging OU before a GPO/Intune rollout.
-   The NSIS installer remains the no-admin option for individual teachers.
-3. **Pilot gate is closed for real data**: no lock screen/roles enforced by the OS, signing key not
-   passphrase-wrapped, backups are a summary payload rather than a full encrypted dump, external
-   audit not closed.
+1. **Unsigned public artifacts** → SmartScreen "More info → Run anyway". The signing pipeline is
+   ready, but an OV/EV certificate has not been issued. The internal pilot candidate is explicitly
+   unsigned and must not be published as production.
+2. **The MSI is per-machine**; test it in a staging OU before a GPO/Intune rollout. The NSIS installer
+   remains the no-admin option for individual teachers. Actual clean-PC install/upgrade testing is
+   still required.
+3. **Real data remains blocked** by the external security review, the school/legal pack, the Windows
+   certificate, and the Android release keystore. The app now enforces local accounts/roles,
+   passphrase-wrapped keys, a full encrypted backup/restore/drill, and an audited data lifecycle, but
+   engineering tests are not an audit.
 4. **Mobile rules are duplicated in JavaScript.** They match the Rust engine today and were checked
    against known values, but a shared rules fixture (golden vectors consumed by both) is needed to
    prevent drift.
 5. **`sitemap.xml` and `robots.txt` use the live Vercel alias** `mark-website-brown.vercel.app`.
    Update both when a custom domain is attached.
-6. **The app cache is versioned by hand** (`app.js?v=0.1.2`, `agentmark-app-v4`). Bump both when
+6. **The app cache is versioned by hand** (`app.js?v=0.1.2`, `agentmark-app-v6`). Bump both when
    the mobile shell changes.
 
 ---
 
 ## 6. Next
 
-1. Code-sign the NSIS installer and MSI (EV certificate).
-2. Close the pilot-gate findings: operator accounts + passphrase-wrapped key, full encrypted backup
-   dump and restore-into-fresh-DB, then the external audit.
-3. Native mobile client once an Android SDK machine is available — with a hub LAN API, not a
-   duplicated rules engine.
+1. Obtain the OV/EV code-signing certificate, set `AGM_SIGN_THUMBPRINT`, and verify a signed
+   NSIS/MSI build on a clean PC.
+2. Run the school/legal pack and the independent review to green; then load a small real-data cohort
+   under the pilot runbook.
+3. Configure the Android release keystore and publish a release-signed 0.2.0 APK (the public 0.1.0
+   APK remains a debug-signed synthetic preview).
 4. Add a golden-vector test shared by `engine/`, `hub-desktop` and the PWA.

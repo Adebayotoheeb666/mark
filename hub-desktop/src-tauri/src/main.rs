@@ -907,9 +907,33 @@ fn dashboard(state: State<AppState>) -> Result<Dashboard, String> {
     if students > 0 && scores == 0 {
         warning.push("No scores entered yet.".into());
     }
-    if let Some(ts) = last_backup_at.as_deref().and_then(parse_iso_secs) {
-        if now_secs().saturating_sub(ts) > 7 * 24 * 60 * 60 {
-            warning.push("Last backup is older than 7 days.".into());
+    match last_backup_at.as_deref().and_then(parse_iso_secs) {
+        Some(ts) => {
+            let age = now_secs().saturating_sub(ts);
+            if age > 7 * 24 * 60 * 60 {
+                warning.push(format!(
+                    "Last backup is {} days old. Create and verify a new backup.",
+                    age / 86_400
+                ));
+            } else if age > 24 * 60 * 60 {
+                warning.push(format!(
+                    "Last backup is {} hours old. Back up before further changes.",
+                    age / 3_600
+                ));
+            }
+        }
+        None if data_mode == "real" => {
+            warning.push("No backup timestamp recorded. Create and verify a backup.".into());
+        }
+        None => {}
+    }
+    if let Some(ts) = last_drill_at.as_deref().and_then(parse_iso_secs) {
+        let age = now_secs().saturating_sub(ts);
+        if age > 30 * 24 * 60 * 60 {
+            warning.push(format!(
+                "Last restore drill is {} days old. Run a drill.",
+                age / 86_400
+            ));
         }
     }
     Ok(Dashboard {
@@ -1016,6 +1040,107 @@ fn students(state: State<AppState>) -> Result<Vec<Student>, String> {
         .collect())
 }
 
+fn normalize_csv_header(value: &str) -> String {
+    value
+        .trim()
+        .to_ascii_lowercase()
+        .replace(' ', "_")
+        .replace('-', "_")
+}
+
+/// Parse RFC-4180-style CSV without pulling in another dependency.
+/// Handles quoted commas, doubled quotes, CRLF, a UTF-8 BOM, and blank lines.
+fn parse_csv_records(text: &str) -> Result<Vec<Vec<String>>, String> {
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let mut rows: Vec<Vec<String>> = Vec::new();
+    let mut row: Vec<String> = Vec::new();
+    let mut field = String::new();
+    let mut in_quotes = false;
+    let mut line = 1usize;
+    let mut chars = text.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if in_quotes {
+            match c {
+                '"' => {
+                    if chars.peek() == Some(&'"') {
+                        chars.next();
+                        field.push('"');
+                    } else {
+                        in_quotes = false;
+                    }
+                }
+                '\n' => {
+                    line += 1;
+                    field.push('\n');
+                }
+                _ => field.push(c),
+            }
+            continue;
+        }
+        match c {
+            '"' if field.is_empty() => in_quotes = true,
+            '"' => return Err(format!("row {line}: unexpected quote in an unquoted field")),
+            ',' => {
+                row.push(field.trim().to_string());
+                field.clear();
+            }
+            '\r' => {}
+            '\n' => {
+                row.push(field.trim().to_string());
+                field.clear();
+                if row.iter().all(|f| f.is_empty()) {
+                    row.clear();
+                } else {
+                    rows.push(std::mem::take(&mut row));
+                }
+                line += 1;
+            }
+            _ => field.push(c),
+        }
+    }
+    if in_quotes {
+        return Err(format!("row {line}: unclosed quoted field"));
+    }
+    if !field.is_empty() || !row.is_empty() {
+        row.push(field.trim().to_string());
+        if !row.iter().all(|f| f.is_empty()) {
+            rows.push(row);
+        }
+    }
+    Ok(rows)
+}
+
+fn validate_import_text(
+    label: &str,
+    value: &str,
+    max_chars: usize,
+    required: bool,
+) -> Result<(), String> {
+    let value = value.trim();
+    if required && value.is_empty() {
+        return Err(format!("{label} is required"));
+    }
+    if value.chars().count() > max_chars {
+        return Err(format!("{label} is longer than {max_chars} characters"));
+    }
+    if value.chars().any(|c| c.is_control()) {
+        return Err(format!("{label} contains a control character"));
+    }
+    Ok(())
+}
+
+fn validate_student_code(code: &str) -> Result<(), String> {
+    validate_import_text("short_code", code, 40, true)?;
+    if !code
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+    {
+        return Err("short_code may contain only letters, digits, dot, dash and underscore".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn roster_import(
     state: State<AppState>,
@@ -1034,20 +1159,63 @@ fn roster_import(
     }
     let guard = db_guard(&state)?;
     let db = guard.as_ref().ok_or("Sign in required.")?;
+
+    let mut records = parse_csv_records(&csv_text)?;
+    if records.is_empty() {
+        return Ok(ImportResult {
+            errors: vec!["The CSV is empty.".into()],
+            would_import: 0,
+            would_import_scores: 0,
+        });
+    }
+    let header: Vec<String> = records.remove(0).iter().map(|h| normalize_csv_header(h)).collect();
+    let expected: Vec<String> = ["short_code", "first_name", "last_name", "class_label"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    let class_alias: Vec<String> = ["short_code", "first_name", "last_name", "class"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    if header != expected && header != class_alias {
+        return Err(
+            "CSV header must be: short_code,first_name,last_name,class_label (or ...class)".into(),
+        );
+    }
+
     let mut errors = vec![];
     let mut rows: Vec<(String, String, String, String)> = vec![];
-    for (i, line) in csv_text.lines().enumerate() {
-        if i == 0 || line.trim().is_empty() {
+    for (i, record) in records.iter().enumerate() {
+        let row_no = i + 2;
+        if record.len() != 4 {
+            errors.push(format!(
+                "row {row_no}: expected 4 columns, found {}",
+                record.len()
+            ));
             continue;
         }
-        let c: Vec<&str> = line.split(',').collect();
-        if c.len() < 4 || c[0].trim().is_empty() || c[1].trim().is_empty() || c[3].trim().is_empty() {
-            errors.push(format!("row {}: missing short_code/first_name/class_label", i + 1));
+        let sc = record[0].trim().to_string();
+        let first = record[1].trim().to_string();
+        let last = record[2].trim().to_string();
+        let class = record[3].trim().to_string();
+        if let Err(e) = validate_student_code(&sc) {
+            errors.push(format!("row {row_no}: {e}"));
             continue;
         }
-        let sc = c[0].trim().to_string();
+        if let Err(e) = validate_import_text("first_name", &first, 80, true) {
+            errors.push(format!("row {row_no}: {e}"));
+            continue;
+        }
+        if let Err(e) = validate_import_text("last_name", &last, 80, false) {
+            errors.push(format!("row {row_no}: {e}"));
+            continue;
+        }
+        if let Err(e) = validate_import_text("class_label", &class, 40, true) {
+            errors.push(format!("row {row_no}: {e}"));
+            continue;
+        }
         if rows.iter().any(|r: &(String, String, String, String)| r.0 == sc) {
-            errors.push(format!("row {}: duplicate short_code {sc} in file", i + 1));
+            errors.push(format!("row {row_no}: duplicate short_code {sc} in file"));
             continue;
         }
         let exists: bool = db
@@ -1058,26 +1226,33 @@ fn roster_import(
             )
             .unwrap();
         if exists {
-            errors.push(format!("row {}: duplicate short_code {sc} in db", i + 1));
+            errors.push(format!("row {row_no}: duplicate short_code {sc} in db"));
             continue;
         }
-        rows.push((
-            sc,
-            c[1].trim().into(),
-            c[2].trim().into(),
-            c[3].trim().into(),
-        ));
+        rows.push((sc, first, last, class));
     }
     let n = rows.len() as i64;
     if !dry_run && errors.is_empty() {
-        for (sc, f, l, cl) in rows {
-            db.execute(
+        let tx = db
+            .unchecked_transaction()
+            .map_err(|e| format!("Could not start roster import: {e}"))?;
+        for (sc, f, l, cl) in &rows {
+            tx.execute(
                 "INSERT INTO students(id,short_code,first,last,class) VALUES(?,?,?,?,?)",
-                params![sc.clone(), sc, f, l, cl],
+                params![sc, sc, f, l, cl],
             )
-            .unwrap();
+            .map_err(|e| format!("Could not import {sc}: {e}"))?;
         }
-        audit(db, &s.username, "roster.import", "students", "null", &format!("{n} rows"));
+        audit(
+            &tx,
+            &s.username,
+            "roster.import",
+            "students",
+            "null",
+            &format!("{n} rows"),
+        );
+        tx.commit()
+            .map_err(|e| format!("Could not commit roster import: {e}"))?;
         persist_state(&state, db)?;
     }
     Ok(ImportResult {
@@ -1085,6 +1260,258 @@ fn roster_import(
         would_import: n,
         would_import_scores: 0,
     })
+}
+
+#[tauri::command]
+fn student_update(
+    state: State<AppState>,
+    short_code: String,
+    first: String,
+    last: String,
+    class: String,
+) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin"])?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let code = short_code.trim().to_string();
+    validate_student_code(&code)?;
+    validate_import_text("first_name", &first, 80, true)?;
+    validate_import_text("last_name", &last, 80, false)?;
+    validate_import_text("class_label", &class, 40, true)?;
+    let exists: bool = db
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM students WHERE short_code=?)",
+            [&code],
+            |r| r.get(0),
+        )
+        .unwrap();
+    if !exists {
+        return Err(format!("Student {code} was not found."));
+    }
+    db.execute(
+        "UPDATE students SET first=?, last=?, class=? WHERE short_code=?",
+        params![first.trim(), last.trim(), class.trim(), code],
+    )
+    .map_err(|e| format!("Could not update student: {e}"))?;
+    audit(
+        db,
+        &s.username,
+        "student.update",
+        &code,
+        "student",
+        "fields:first,last,class",
+    );
+    persist_state(&state, db)?;
+    Ok(format!("Student {code} updated."))
+}
+
+#[tauri::command]
+fn student_delete(
+    state: State<AppState>,
+    short_code: String,
+    confirm_code: String,
+) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin"])?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let code = short_code.trim().to_string();
+    validate_student_code(&code)?;
+    if confirm_code.trim() != code {
+        return Err("Confirmation code did not match. Nothing was deleted.".into());
+    }
+    let exists: bool = db
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM students WHERE short_code=?)",
+            [&code],
+            |r| r.get(0),
+        )
+        .unwrap();
+    if !exists {
+        return Err(format!("Student {code} was not found."));
+    }
+    let tx = db
+        .unchecked_transaction()
+        .map_err(|e| format!("Could not start student deletion: {e}"))?;
+    let scores = tx
+        .execute("DELETE FROM scores WHERE student_code=?", [&code])
+        .map_err(|e| format!("Could not delete scores: {e}"))?;
+    let flags = tx
+        .execute("DELETE FROM flags WHERE student_code=?", [&code])
+        .map_err(|e| format!("Could not delete flags: {e}"))?;
+    let comments = tx
+        .execute("DELETE FROM comments WHERE student_code=?", [&code])
+        .map_err(|e| format!("Could not delete comments: {e}"))?;
+    let reports = tx
+        .execute("DELETE FROM reports WHERE student_code=?", [&code])
+        .map_err(|e| format!("Could not delete reports: {e}"))?;
+    let students = tx
+        .execute("DELETE FROM students WHERE short_code=?", [&code])
+        .map_err(|e| format!("Could not delete student: {e}"))?;
+    audit(
+        &tx,
+        &s.username,
+        "student.delete",
+        &code,
+        "student",
+        &format!(
+            "students={students};scores={scores};flags={flags};comments={comments};reports={reports}"
+        ),
+    );
+    tx.commit()
+        .map_err(|e| format!("Could not commit student deletion: {e}"))?;
+    persist_state(&state, db)?;
+    Ok(format!(
+        "Deleted {code} and related rows (scores={scores}, flags={flags}, comments={comments}, reports={reports}). Backups may still contain this record; follow the school's retention schedule."
+    ))
+}
+
+#[tauri::command]
+fn student_export(state: State<AppState>, short_code: String) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin"])?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let code = short_code.trim().to_string();
+    validate_student_code(&code)?;
+    let student: Option<(String, String, String, String)> = db
+        .query_row(
+            "SELECT short_code, first, last, class FROM students WHERE short_code=?",
+            [&code],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        )
+        .optional()
+        .map_err(|e| format!("Could not read student: {e}"))?;
+    let Some((sc, first, last, class)) = student else {
+        return Err(format!("Student {code} was not found."));
+    };
+
+    let mut stmt = db
+        .prepare(
+            "SELECT id,subject,label,value,entered_by,version,supersedes,created_at
+             FROM scores WHERE student_code=? ORDER BY subject,label,version",
+        )
+        .map_err(|e| format!("Could not read scores: {e}"))?;
+    let scores: Vec<serde_json::Value> = stmt
+        .query_map([&code], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_, String>(0)?,
+                "subject": r.get::<_, String>(1)?,
+                "label": r.get::<_, String>(2)?,
+                "value": r.get::<_, f64>(3)?,
+                "entered_by": r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                "version": r.get::<_, i64>(5)?,
+                "supersedes": r.get::<_, Option<String>>(6)?,
+                "created_at": r.get::<_, Option<String>>(7)?.unwrap_or_default(),
+            }))
+        })
+        .map_err(|e| format!("Could not read scores: {e}"))?
+        .flatten()
+        .collect();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT subject,term,template_id,final_text,author FROM comments
+             WHERE student_code=? ORDER BY term,subject",
+        )
+        .map_err(|e| format!("Could not read comments: {e}"))?;
+    let comments: Vec<serde_json::Value> = stmt
+        .query_map([&code], |r| {
+            Ok(serde_json::json!({
+                "subject": r.get::<_, String>(0)?,
+                "term": r.get::<_, String>(1)?,
+                "template_id": r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                "final_text": r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                "author": r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+            }))
+        })
+        .map_err(|e| format!("Could not read comments: {e}"))?
+        .flatten()
+        .collect();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT id,subject,label,rule_id,severity,message,status,disposition,actor,note,created_at
+             FROM flags WHERE student_code=? ORDER BY created_at,id",
+        )
+        .map_err(|e| format!("Could not read flags: {e}"))?;
+    let flags: Vec<serde_json::Value> = stmt
+        .query_map([&code], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_, String>(0)?,
+                "subject": r.get::<_, String>(1)?,
+                "label": r.get::<_, String>(2)?,
+                "rule_id": r.get::<_, String>(3)?,
+                "severity": r.get::<_, String>(4)?,
+                "message": r.get::<_, String>(5)?,
+                "status": r.get::<_, String>(6)?,
+                "disposition": r.get::<_, Option<String>>(7)?,
+                "actor": r.get::<_, Option<String>>(8)?,
+                "note": r.get::<_, Option<String>>(9)?,
+                "created_at": r.get::<_, Option<String>>(10)?.unwrap_or_default(),
+            }))
+        })
+        .map_err(|e| format!("Could not read flags: {e}"))?
+        .flatten()
+        .collect();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT id,term,version,payload,hash,signature,status,approvals
+             FROM reports WHERE student_code=? ORDER BY term,version",
+        )
+        .map_err(|e| format!("Could not read reports: {e}"))?;
+    let reports: Vec<serde_json::Value> = stmt
+        .query_map([&code], |r| {
+            let raw: String = r.get(3)?;
+            let payload = serde_json::from_str(&raw).unwrap_or(serde_json::Value::String(raw));
+            Ok(serde_json::json!({
+                "id": r.get::<_, String>(0)?,
+                "term": r.get::<_, String>(1)?,
+                "version": r.get::<_, i64>(2)?,
+                "payload": payload,
+                "hash": r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                "signature": r.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                "status": r.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                "approvals": r.get::<_, Option<String>>(7)?.unwrap_or_default(),
+            }))
+        })
+        .map_err(|e| format!("Could not read reports: {e}"))?
+        .flatten()
+        .collect();
+
+    let payload = serde_json::json!({
+        "format": "agent-mark-student-export",
+        "version": 1,
+        "exported_at": now_iso(),
+        "exported_by": s.username,
+        "school": meta_get(db, "school_name").unwrap_or_default(),
+        "student": {
+            "short_code": sc,
+            "first": first,
+            "last": last,
+            "class": class,
+        },
+        "scores": scores,
+        "comments": comments,
+        "flags": flags,
+        "reports": reports,
+        "note": "This file contains personal data. Store it securely and delete it when no longer needed."
+    });
+    audit(
+        db,
+        &s.username,
+        "student.export",
+        &code,
+        "null",
+        "data subject export",
+    );
+    persist_state(&state, db)?;
+    serde_json::to_string_pretty(&payload).map_err(|e| format!("Could not serialize export: {e}"))
 }
 
 fn decrypt_mobile_export(file: &[u8], passphrase: &str) -> Result<serde_json::Value, String> {
@@ -1301,6 +1728,58 @@ fn mobile_import(
 }
 
 // ---------- scores / flags / comments ----------
+fn assessment_max(db: &Connection, subject: &str, label: &str) -> Result<f64, String> {
+    db.query_row(
+        "SELECT max_score FROM assessments WHERE subject=? AND label=?",
+        params![subject, label],
+        |r| r.get(0),
+    )
+    .optional()
+    .unwrap()
+    .ok_or_else(|| format!("unknown assessment {subject}/{label}"))
+}
+
+fn validate_score_value(value: f64, max: f64) -> Result<(), String> {
+    if value.is_nan() {
+        return Err("VAL-MISS-01: score is missing".into());
+    }
+    if !value.is_finite() {
+        return Err("VAL-TYPE-01: score must be a finite number".into());
+    }
+    if value < 0.0 || value > max {
+        return Err(format!("VAL-RANGE-01: {value} is outside 0-{max}"));
+    }
+    Ok(())
+}
+
+fn ensure_student_exists(db: &Connection, student: &str) -> Result<(), String> {
+    let exists: bool = db
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM students WHERE short_code=?)",
+            [student],
+            |r| r.get(0),
+        )
+        .unwrap();
+    if !exists {
+        return Err(format!("Student {student} was not found."));
+    }
+    Ok(())
+}
+
+fn score_reason(reason: &str) -> Result<String, String> {
+    let reason = reason.trim().to_string();
+    if reason.chars().count() < 8 {
+        return Err("A correction reason of at least 8 characters is required.".into());
+    }
+    if reason.chars().count() > 240 {
+        return Err("The correction reason is too long (maximum 240 characters).".into());
+    }
+    if reason.chars().any(|c| c.is_control()) {
+        return Err("The correction reason contains a control character.".into());
+    }
+    Ok(reason)
+}
+
 #[tauri::command]
 fn score_add(
     state: State<AppState>,
@@ -1314,21 +1793,10 @@ fn score_add(
     require_role(&s, &["admin", "teacher"])?;
     let guard = db_guard(&state)?;
     let db = guard.as_ref().ok_or("Sign in required.")?;
-    let max: f64 = db
-        .query_row(
-            "SELECT max_score FROM assessments WHERE subject=? AND label=?",
-            params![subject, label],
-            |r| r.get(0),
-        )
-        .optional()
-        .unwrap()
-        .ok_or_else(|| format!("unknown assessment {subject}/{label}"))?;
-    if value.is_nan() {
-        return Err("VAL-MISS-01: score is missing".into());
-    }
-    if value < 0.0 || value > max {
-        return Err(format!("VAL-RANGE-01: {value} is outside 0–{max}"));
-    }
+    let student = student.trim().to_string();
+    ensure_student_exists(db, &student)?;
+    let max = assessment_max(db, &subject, &label)?;
+    validate_score_value(value, max)?;
     let mut stmt = db
         .prepare("SELECT id, value FROM scores WHERE student_code=? AND subject=? AND label=?")
         .unwrap();
@@ -1338,7 +1806,7 @@ fn score_add(
         .flatten()
         .collect();
     if priors.iter().any(|(_, v)| (*v - value).abs() > 1e-9) {
-        return Err("VAL-DUP-01: conflicting prior entry exists — use update flow".into());
+        return Err("VAL-DUP-01: conflicting prior entry exists - use the correction flow".into());
     }
     if let Some((id, _)) = priors.first() {
         return Ok(id.clone());
@@ -1359,6 +1827,104 @@ fn score_add(
     );
     persist_state(&state, db)?;
     Ok(id)
+}
+
+/// Append a corrected score version. Prior versions stay immutable for the audit trail.
+#[tauri::command]
+fn score_update(
+    state: State<AppState>,
+    student: String,
+    subject: String,
+    label: String,
+    value: f64,
+    reason: String,
+) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin", "teacher"])?;
+    let reason = score_reason(&reason)?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let student = student.trim().to_string();
+    ensure_student_exists(db, &student)?;
+    let max = assessment_max(db, &subject, &label)?;
+    validate_score_value(value, max)?;
+    let prior: Option<(String, f64, i64)> = db
+        .query_row(
+            "SELECT id,value,version FROM scores WHERE student_code=? AND subject=? AND label=? ORDER BY version DESC LIMIT 1",
+            params![student, subject, label],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| format!("Could not read the existing score: {e}"))?;
+    let Some((old_id, old_value, old_version)) = prior else {
+        return Err("No existing score to correct. Use Enter score for a new entry.".into());
+    };
+    if (old_value - value).abs() <= 1e-9 {
+        return Ok(format!("Score unchanged ({old_id})."));
+    }
+    let id = format!("s{}", now_iso().replace('t', "") + &rand::random::<u32>().to_string());
+    let version = old_version + 1;
+    db.execute(
+        "INSERT INTO scores(id,student_code,subject,label,value,entered_by,version,supersedes,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
+        params![id, student, subject, label, value, s.username, version, old_id, now_iso()],
+    )
+    .map_err(|e| format!("Could not save the corrected score: {e}"))?;
+    audit(
+        db,
+        &s.username,
+        "score.update",
+        &id,
+        &format!("old={old_id};value={old_value};version={old_version}"),
+        &format!("new_value={value};version={version};reason={reason}"),
+    );
+    persist_state(&state, db)?;
+    Ok(id)
+}
+
+/// Admin-only removal of every version for one student/assessment pair.
+#[tauri::command]
+fn score_delete(
+    state: State<AppState>,
+    student: String,
+    subject: String,
+    label: String,
+    reason: String,
+) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin"])?;
+    let reason = score_reason(&reason)?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let student = student.trim().to_string();
+    let count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM scores WHERE student_code=? AND subject=? AND label=?",
+            params![student, subject, label],
+            |r| r.get(0),
+        )
+        .unwrap();
+    if count == 0 {
+        return Err("No score versions found for that student/assessment.".into());
+    }
+    db.execute(
+        "DELETE FROM scores WHERE student_code=? AND subject=? AND label=?",
+        params![student, subject, label],
+    )
+    .map_err(|e| format!("Could not delete the score: {e}"))?;
+    audit(
+        db,
+        &s.username,
+        "score.delete",
+        &format!("{student}/{subject}/{label}"),
+        &format!("versions={count}"),
+        &format!("reason={reason}"),
+    );
+    persist_state(&state, db)?;
+    Ok(format!(
+        "Deleted {count} score version(s) for {student} {subject}/{label}. Re-draft affected reports."
+    ))
 }
 
 #[tauri::command]
@@ -1693,6 +2259,77 @@ fn hub_keys(db: &Connection) -> (SigningKey, VerifyingKey) {
     )
     .unwrap();
     (sk, vk)
+}
+
+#[tauri::command]
+fn purge_all_data(state: State<AppState>, confirm: String) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    require_role(&s, &["admin"])?;
+    if confirm.trim() != "PURGE" {
+        return Err("Type PURGE exactly to confirm. Nothing was deleted.".into());
+    }
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let tx = db
+        .unchecked_transaction()
+        .map_err(|e| format!("Could not start data purge: {e}"))?;
+    let scores = tx
+        .execute("DELETE FROM scores", [])
+        .map_err(|e| format!("Could not delete scores: {e}"))?;
+    let flags = tx
+        .execute("DELETE FROM flags", [])
+        .map_err(|e| format!("Could not delete flags: {e}"))?;
+    let comments = tx
+        .execute("DELETE FROM comments", [])
+        .map_err(|e| format!("Could not delete comments: {e}"))?;
+    let reports = tx
+        .execute("DELETE FROM reports", [])
+        .map_err(|e| format!("Could not delete reports: {e}"))?;
+    let students = tx
+        .execute("DELETE FROM students", [])
+        .map_err(|e| format!("Could not delete students: {e}"))?;
+    meta_set(&tx, "data_mode", "demo", &s.username);
+    meta_set(&tx, "backup_verified", "no", &s.username);
+    meta_set(&tx, "drill_passed", "no", &s.username);
+    meta_set(&tx, "privacy_ack", "no", &s.username);
+    meta_set(&tx, "test_override", "no", &s.username);
+    audit(
+        &tx,
+        &s.username,
+        "data.purge",
+        "all",
+        "live rows",
+        &format!(
+            "students={students};scores={scores};flags={flags};comments={comments};reports={reports}"
+        ),
+    );
+    tx.commit()
+        .map_err(|e| format!("Could not commit data purge: {e}"))?;
+    persist_state(&state, db)?;
+    Ok(format!(
+        "Purged all live data (students={students}, scores={scores}, flags={flags}, comments={comments}, reports={reports}). The audit log is retained. Delete the backups folder and the data folder separately when the school's retention plan requires a full wipe."
+    ))
+}
+
+#[tauri::command]
+fn hub_fingerprint(state: State<AppState>) -> Result<String, String> {
+    let s = session_snapshot(&state)?;
+    require_active(&s)?;
+    let guard = db_guard(&state)?;
+    let db = guard.as_ref().ok_or("Sign in required.")?;
+    let had_pub = meta_get(db, "hub_pub").is_some();
+    let (_, vk) = hub_keys(db);
+    if !had_pub {
+        persist_state(&state, db)?;
+    }
+    let digest = hex::encode(Sha256::digest(vk.as_bytes())).to_uppercase();
+    Ok(digest
+        .as_bytes()
+        .chunks(4)
+        .map(|chunk| std::str::from_utf8(chunk).unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("-"))
 }
 
 #[tauri::command]
@@ -2784,8 +3421,13 @@ fn main() {
             seed_demo,
             students,
             roster_import,
+            student_update,
+            student_delete,
+            student_export,
             mobile_import,
             score_add,
+            score_update,
+            score_delete,
             results,
             flags_scan,
             flags,
@@ -2804,6 +3446,8 @@ fn main() {
             drill_run,
             restore_backup,
             recover_from_backup,
+            purge_all_data,
+            hub_fingerprint,
             clear_demo,
             privacy_ack,
             enable_real_mode,
@@ -2994,5 +3638,34 @@ mod backup_tests {
         std::fs::write(dir.join("vault.json"), b"live-vault").unwrap();
         assert!(!adopt_vault_from_backup_kit(&dir).unwrap());
         assert_eq!(std::fs::read(dir.join("vault.json")).unwrap(), b"live-vault");
+    }
+}
+
+#[cfg(test)]
+mod csv_tests {
+    use super::*;
+
+    #[test]
+    fn parses_quoted_fields_and_crlf() {
+        let text = "\u{feff}short_code,first_name,last_name,class_label\r\n\
+                    26-JSS2A-001,\"Ada, Jr.\",Okafor,JSS2-A\r\n\
+                    26-JSS2A-002,\"Bola \"\"BJ\"\"\",Bello,JSS2-A\r\n";
+        let rows = parse_csv_records(text).unwrap();
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[1][1], "Ada, Jr.");
+        assert_eq!(rows[2][1], "Bola \"BJ\"");
+    }
+
+    #[test]
+    fn rejects_unclosed_quotes() {
+        let err = parse_csv_records("a,b\n1,\"unclosed").unwrap_err();
+        assert!(err.contains("unclosed"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn validates_student_codes_and_control_characters() {
+        assert!(validate_student_code("26-JSS2A-001").is_ok());
+        assert!(validate_student_code("bad code").is_err());
+        assert!(validate_import_text("first_name", "Ada\nOkafor", 80, true).is_err());
     }
 }

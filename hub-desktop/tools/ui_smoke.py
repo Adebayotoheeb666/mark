@@ -76,6 +76,28 @@ JS = r"""
   await waitFor(() => clearBtn(), 'clear demo button');
   step('clear_demo_enabled_with_demo', !clearBtn().disabled);
 
+  // Students page exposes the admin data-lifecycle actions.
+  [...document.querySelectorAll('#nav button')].find((b) => b.dataset.s === 'students').click();
+  await waitFor(() => text().includes('Data lifecycle'), 'students lifecycle card');
+  const studentButtons = [...document.querySelectorAll('#view button')].map((b) => b.textContent.trim());
+  step('student_lifecycle_actions', {
+    edit: studentButtons.includes('Edit'),
+    export: studentButtons.includes('Export'),
+    delete: studentButtons.includes('Delete'),
+  });
+  if (!studentButtons.includes('Edit') || !studentButtons.includes('Export') || !studentButtons.includes('Delete')) {
+    throw new Error('student lifecycle actions missing');
+  }
+
+  // Account page exposes the hub signing-key fingerprint.
+  [...document.querySelectorAll('#nav button')].find((b) => b.dataset.s === 'account').click();
+  const fp = await waitFor(() => {
+    const el = document.querySelector('#hub-fp');
+    return el && el.textContent.trim().length > 60 ? el.textContent.trim() : null;
+  }, 'hub fingerprint');
+  step('account_fingerprint', { length: fp.length, groups: fp.split('-').length });
+  if (fp.split('-').length !== 16) throw new Error('unexpected fingerprint format');
+
   // Lock and sign back in through the form.
   document.querySelector('#lock-btn').click();
   await waitFor(() => document.querySelector('#li-user'), 'login form after lock');
