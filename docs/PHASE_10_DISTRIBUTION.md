@@ -271,7 +271,9 @@ build time, and signing status, and rewrites `website/version.json` +
 
 1. **Unsigned public artifacts** → SmartScreen "More info → Run anyway". The signing pipeline is
    ready, but an OV/EV certificate has not been issued. The internal pilot candidate is explicitly
-   unsigned and must not be published as production.
+   unsigned and must not be published as production. The signing hook was smoke-tested with a
+   temporary self-signed certificate (signed and timestamped; untrusted-root verification rejected as
+   expected); a real OV certificate is still required.
 2. **The MSI is per-machine**; test it in a staging OU before a GPO/Intune rollout. The NSIS installer
    remains the no-admin option for individual teachers. Actual clean-PC install/upgrade testing is
    still required.

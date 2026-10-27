@@ -253,7 +253,8 @@ screen. The E2E creates its own admin account and does not need `AGM_AUTO_DEMO`.
 
 - No OV/EV code-signing certificate has been issued yet. The release pipeline now requires and
   verifies a signature by default; `-AllowUnsigned` exists only for internal pilot builds, and
-  Windows SmartScreen warns on unsigned artifacts.
+  Windows SmartScreen warns on unsigned artifacts. The hook was smoke-tested with a temporary
+  self-signed certificate; a trusted certificate is still needed.
 - No independent security review yet. Engineering tests are green; that is not an audit.
 - No automatic backup scheduler or automatic retention/pruning. Stale-backup warnings are in the UI,
   and the retention schedule is a school procedure in the pilot pack; a human must still prune and

@@ -96,8 +96,10 @@ environment variable.
 **Last local verification (2026-10-27):** 17/17 Rust tests, `e2e_smoke.py`, `ui_smoke.py`,
 `lifecycle_smoke.py`, debug override smoke + UI smoke, `recover_smoke.py`, `verify_db.py`, and the
 release-gate smoke all passed on the final source. The NSIS per-user silent install/uninstall and
-portable ZIP launch passed; MSI administrative extraction passed. These are engineering results, not
-an independent audit.
+portable ZIP launch passed; MSI administrative extraction passed. The signing hook was also exercised
+with a temporary self-signed code-signing certificate: `signtool` signed and timestamped the NSIS
+installer, and verification correctly rejected the untrusted test root. A real OV certificate is still
+required. These are engineering results, not an independent audit.
 
 **Immediate rule:** until this gate is green, use the demo school or synthetic data only. If real data
 has already been entered in a test copy, delete that copy and its backups.

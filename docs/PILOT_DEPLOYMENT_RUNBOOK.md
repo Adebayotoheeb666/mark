@@ -78,8 +78,10 @@ production installer.
 
 **Internal pilot artifact check (2026-10-27):** the unsigned NSIS per-user silent install/uninstall
 passed into a clean temporary directory, the portable ZIP extracted and launched, and the MSI
-administrative extraction passed. A real per-machine MSI install/upgrade still needs the school's IT
-test PC. These checks do not replace the independent review.
+administrative extraction passed. The signing hook was exercised with a temporary self-signed
+certificate: `signtool` signed and timestamped the NSIS installer, and verification correctly rejected
+the untrusted test root. A real per-machine MSI install/upgrade still needs the school's IT test PC.
+These checks do not replace the independent review.
 
 ### 3.2 First launch and recovery kit
 
