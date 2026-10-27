@@ -30,3 +30,7 @@ base64 = "0.22"
 # dev-URL behaviour back (e.g. while iterating on the UI with a local server).
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+# Never enabled by the release build. A test build with this feature can enable real-data
+# mode without the production gate when AGM_TEST_ALLOW_REAL_DATA=1 is also set; the
+# override is logged and shown as a red TEST MODE banner.
+allow-real-data-test = []

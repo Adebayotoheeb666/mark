@@ -273,8 +273,8 @@ function go(s) {
 
 function applyHeader(d) {
   $("#school-label").textContent = d.school_name || "";
-  $("#mode-badge").textContent = d.live ? "REAL DATA" : "DEMO";
-  $("#mode-badge").className = "pill " + (d.live ? "live" : "off");
+  $("#mode-badge").textContent = d.test_override ? "TEST DATA" : (d.live ? "REAL DATA" : "DEMO");
+  $("#mode-badge").className = "pill " + (d.test_override ? "warning" : (d.live ? "live" : "off"));
   $("#user-chip").textContent = `${d.username} · ${roleLabel(d.role)}`;
 }
 
@@ -311,9 +311,11 @@ async function dash() {
   applyHeader(DASH);
   const block = DASH.blocking.map((b) => `<li class="blocking">${esc(b)}</li>`).join("") || "<li class='ok'>None.</li>";
   const warn = DASH.warning.map((b) => `<li class="warning">${esc(b)}</li>`).join("") || "<li>None.</li>";
-  const modeBanner = DASH.live
-    ? `<div class="banner real"><b>REAL DATA MODE</b> — only authorized student data. Back up before every bulk change.</div>`
-    : `<div class="banner demo"><b>DEMO MODE</b> — synthetic data only. Real import is locked until the gate is complete.</div>`;
+  const modeBanner = DASH.test_override
+    ? `<div class="banner warn"><b>REAL DATA TEST MODE</b> — the production real-data gate was bypassed. Use only synthetic or explicitly authorized test data; this is not a production approval.</div>`
+    : DASH.live
+      ? `<div class="banner real"><b>REAL DATA MODE</b> — only authorized student data. Back up before every bulk change.</div>`
+      : `<div class="banner demo"><b>DEMO MODE</b> — synthetic data only. Real import is locked until the gate is complete.</div>`;
   const must = DASH.must_change
     ? `<div class="banner warn">You are using a temporary password. <button class="act ghost" onclick="showChangePassword()">Change it now</button></div>`
     : "";
@@ -331,6 +333,7 @@ async function dash() {
     <div class="stat"><b>${DASH.reports_locked}</b><span>locked reports</span></div>
     <div class="stat ${DASH.backup_verified ? "ok" : "bad"}"><b>${DASH.backup_verified ? "yes" : "no"}</b><span>backup verified</span></div>
     <div class="stat ${DASH.drill_passed ? "ok" : "bad"}"><b>${DASH.drill_passed ? "yes" : "no"}</b><span>drill passed</span></div>
+    ${DASH.test_override ? `<div class="stat bad"><b>TEST</b><span>gate bypassed</span></div>` : ""}
   </div>
   <div class="card"><h2>Readiness checklist</h2><ul>${block}</ul><h2>Warnings</h2><ul>${warn}</ul>
     <div class="actions">
@@ -590,10 +593,19 @@ async function backup() {
   const rows = list.map((b) => `<tr><td>${esc(b.id)}</td><td>${esc(b.created_at)}</td><td>${b.students}</td><td>${b.scores}</td><td>${b.reports}</td>
     <td class="mono">${esc(String(b.sha256 || "").slice(0, 16))}…</td>
     <td>${isAdmin ? `<button class="act ghost" onclick="doVerifyId('${jsq(b.id)}')">Verify</button>` : ""}</td></tr>`).join("");
-  const gate = d.live
-    ? `<div class="banner real"><b>REAL DATA MODE</b> — backups should be fresh before bulk changes and term locks.</div>`
-    : `<div class="banner demo"><b>REAL-DATA GATE</b> — complete these steps before importing real students.</div>`;
-  return `${gate}
+  const gate = d.test_override
+    ? `<div class="banner warn"><b>REAL DATA TEST MODE</b> — the production real-data gate was bypassed. Use only synthetic or explicitly authorized test data; this is not a production approval.</div>`
+    : d.live
+      ? `<div class="banner real"><b>REAL DATA MODE</b> — backups should be fresh before bulk changes and term locks.</div>`
+      : `<div class="banner demo"><b>REAL-DATA GATE</b> — complete these steps before importing real students.</div>`;
+  const demoRows = (d.students || 0) + (d.scores || 0) + (d.reports || 0);
+  const testPanel = isAdmin && d.test_override_available && !d.live ? `
+  <div class="card"><h2>Test-only real-data unlock</h2>
+    <p class="muted small">This build is running in test mode (<code>AGM_TEST_ALLOW_REAL_DATA=1</code>). The override skips the verified-backup, drill and privacy checks, records your reason in the audit log, and shows a red TEST MODE banner on every screen. Use synthetic or explicitly authorized test data only; this is not a production approval.</p>
+    <div class="actions"><button class="act danger" ${demoRows > 0 ? "disabled" : ""} onclick="doEnableRealTest()">Enable real data for testing</button></div>
+    ${demoRows > 0 ? `<p class="warning small">Clear demo data first.</p>` : ""}
+  </div>` : "";
+  return `${gate}${testPanel}
   <div class="card"><h2>Backup &amp; restore gate</h2>
     <p>Backup verified: <b class="${d.backup_verified ? "ok" : "blocking"}">${d.backup_verified ? "yes" : "no"}</b> ·
        Drill passed: <b class="${d.drill_passed ? "ok" : "blocking"}">${d.drill_passed ? "yes" : "no"}</b> ·
@@ -646,6 +658,16 @@ async function doPrivacy() {
 async function doEnableReal() {
   if (!confirm("Enable REAL DATA MODE? From this point the hub accepts real student data. Confirm the school authorization, privacy notice and staff training are in place.")) return;
   const r = await call("enable_real_mode", {}, null);
+  if (r) { toast(r); DASH = null; render(); }
+}
+async function doEnableRealTest() {
+  const reason = prompt("Reason for the test override (at least 12 characters). This is written to the audit log.");
+  if (!reason || reason.trim().length < 12) {
+    toast("A reason of at least 12 characters is required.");
+    return;
+  }
+  if (!confirm("Enable REAL DATA TEST MODE? The production gate will be bypassed. Use only synthetic or explicitly authorized test data; this is not a production approval.")) return;
+  const r = await call("enable_real_mode", { testOverrideReason: reason.trim() }, null);
   if (r) { toast(r); DASH = null; render(); }
 }
 async function doRestore() {

@@ -74,7 +74,10 @@ cd hub-desktop\src-tauri; cargo test                 # 14 crypto/backup/mobile-f
 cd hub-desktop; python tools\e2e_smoke.py 9223       # auth, roles, gate, backup/drill/recover, mobile import
 cd hub-desktop; python tools\ui_smoke.py 9224        # real WebView setup/login/lock/auto-lock
 cd hub-desktop; python tools\recover_smoke.py 9225   # missing hub.db/vault.json/.bak -> restore from backup kit
-cd ..; python hub-desktop\tools\verify_db.py "%APPDATA%\org.agentmark.hub\agent-mark-hub" --user admin
+cd hub-desktop; python tools\test_override_smoke.py 9230  # debug-only audited real-data test override
+cd hub-desktop; python tools\test_override_ui_smoke.py 9234  # TEST DATA badge/banner/dashboard stat
+cd hub-desktop; python tools\test_override_smoke.py 9235 --expect-blocked  # release build ignores the override
+cd ..; python hub-desktop\tools\verify_db.py "%APPDATA%\org.agentmark.hub\agent-mark-hub" --user admin --password "your-password"
 ```
 The last command is the offline auditor check: it opens the encrypted vault read-only, re-computes
 the audit chain, verifies every locked report signature, and verifies every backup manifest,

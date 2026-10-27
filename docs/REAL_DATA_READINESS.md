@@ -66,6 +66,9 @@ cd hub-desktop\src-tauri; cargo test
 cd hub-desktop; python tools\e2e_smoke.py 9223
 cd hub-desktop; python tools\ui_smoke.py 9224
 cd hub-desktop; python tools\recover_smoke.py 9225   # after copying a backup kit and deleting hub.db/vault.json/.bak
+cd hub-desktop; python tools\test_override_smoke.py 9230  # debug app + AGM_TEST_ALLOW_REAL_DATA=1
+cd hub-desktop; python tools\test_override_ui_smoke.py 9234  # TEST DATA badge/banner/dashboard stat
+cd hub-desktop; python tools\test_override_smoke.py 9235 --expect-blocked  # release build ignores the override
 ```
 
 The Rust suite currently covers: encrypted blob round-trip, wrong key, tampered ciphertext, missing
@@ -76,10 +79,22 @@ E2E covers setup, roles, wrong password, demo clearing, backup, verify, drill, p
 enabling real mode, mobile dry-run/import/idempotence, tamper rejection, and disaster recovery from
 the on-disk backup kit. `recover_smoke.py` additionally deletes `hub.db`, `vault.json`, and their
 `.bak` copies, starts the app with only the backup folder, and proves the app adopts
-`vault-BK-*.json`, restores, and unlocks.
+`vault-BK-*.json`, restores, and unlocks. `test_override_smoke.py` proves the normal gate still
+blocks, a short reason is rejected, and the audited debug-only override enters real mode with
+`test_override=true`.
 
 **Immediate rule:** until this gate is green, use the demo school or synthetic data only. If real data
 has already been entered in a test copy, delete that copy and its backups.
+
+### Test-only override (does not close the gate)
+
+The debug build can enter real-data mode for controlled workflow testing when
+`AGM_TEST_ALLOW_REAL_DATA=1` is set, the account is an admin, no demo rows remain, and the caller
+supplies a reason of at least 12 characters. The override is recorded as
+`real_mode.test_override` in the audit log and shows a red **REAL DATA TEST MODE** banner. It is
+unavailable in the standard release installers, which still enforce the full gate. See
+`docs/REAL_DATA_TEST_OVERRIDE.md`. Use synthetic or explicitly authorized test data only; this is
+not a production approval and does not close gates A–G.
 
 ---
 

@@ -29,6 +29,23 @@ Data lives in `%APPDATA%\org.agentmark.hub\agent-mark-hub\`: `hub.db` (encrypted
 (staff accounts + wrapped data keys), and `backups\` (encrypted snapshots, signed manifests, and
 `vault-BK-*.json` recovery copies). Delete that folder for a factory reset — after taking a backup.
 
+## Test-only real-data override
+
+Release installers keep the production real-data gate. For controlled workflow testing, the debug
+build can bypass it when `AGM_TEST_ALLOW_REAL_DATA=1` is set, the account is an admin, no demo rows
+remain, and you supply a reason of at least 12 characters. The override is written to the audit log
+as `real_mode.test_override`, and every screen shows a red **REAL DATA TEST MODE** banner.
+
+```powershell
+# From the repo root. Uses %TEMP%\agent-mark-test-real and builds if needed.
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-test-mode.ps1 -Build
+```
+
+The standard release build cannot enable the override: it is gated on `cfg!(debug_assertions)` or an
+explicit `--features allow-real-data-test` test build, plus the environment variable. See
+`docs/REAL_DATA_TEST_OVERRIDE.md` for the safety rules and cleanup steps. Use synthetic or
+explicitly authorized test data only; this is not a production database.
+
 ## Package a release (NSIS + MSI + portable ZIP)
 
 The Tauri CLI is installed **globally** (`npm i -g @tauri-apps/cli`, v2.12.4), so no local
@@ -148,23 +165,34 @@ entirely, delete `.cargo/config.toml`, and build with the default MSVC toolchain
 
 ## Headless verification (no clicking)
 
-Three scripts check the build without driving the UI:
+Headless verification scripts:
 
-- `python tools\verify_db.py <data-folder>` — opens the encrypted vault read-only with an account
+These scripts check the build through the DevTools bridge and, for the UI tests, the real WebView:
+
+- `python tools\verify_db.py <data-folder>` - opens the encrypted vault read-only with an account
   password, re-computes the audit hash chain, verifies the Ed25519 signature of every locked report,
   and verifies every backup manifest, signature, decryption, row counts, audit head, and plaintext
   leak check.
-- `python tools\e2e_smoke.py 9223` — connects to the running app through WebView2's DevTools
+- `python tools\e2e_smoke.py 9223` - connects to the running app through WebView2's DevTools
   protocol and calls the same `invoke` bridge the UI uses, exercising setup, roles, wrong password,
   demo clearing, backup, verify, drill, real mode, mobile `.agmm` import, and disaster recovery.
-- `python tools\ui_smoke.py 9224` — drives the real WebView setup/login/lock/auto-lock screens.
+- `python tools\ui_smoke.py 9224` - drives the real WebView setup/login/lock/auto-lock screens.
+- `python tools\recover_smoke.py 9225` - starts from a backup kit with no `hub.db`/`vault.json`
+  (including `.bak`) and proves vault adoption plus restore.
+- `python tools\test_override_smoke.py 9230` - with `AGM_TEST_ALLOW_REAL_DATA=1` on a debug build,
+  proves the normal gate still blocks and the audited test override enters real-data mode.
+- `python tools\test_override_ui_smoke.py 9234` - drives the setup form, opens the test panel, and
+  confirms the TEST DATA badge, red banner, and dashboard stat after the override.
+- `python tools\test_override_smoke.py 9235 --expect-blocked` - run against the **release** binary
+  with `AGM_TEST_ALLOW_REAL_DATA=1`; proves the release gate ignores the override and stays in demo
+  mode.
 
 ```powershell
 $env:AGM_DATA_DIR = "$env:TEMP\agm-e2e"      # throwaway database (normal runs ignore this)
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
 Start-Process .\src-tauri\target\debug\agent-mark-hub.exe
 python tools\e2e_smoke.py 9223
-python tools\verify_db.py "$env:TEMP\agm-e2e" --user admin.e2e
+python tools\verify_db.py "$env:TEMP\agm-e2e" --user admin.e2e --password "Admin-Passphrase-2026!"
 ```
 
 `AGM_DATA_DIR` exists only for testing; a normal launch uses `%APPDATA%` and starts at the setup

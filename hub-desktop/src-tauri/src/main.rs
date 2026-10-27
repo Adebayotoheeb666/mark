@@ -242,6 +242,8 @@ struct Dashboard {
     live: bool,
     data_mode: String,
     privacy_ack: bool,
+    test_override: bool,
+    test_override_available: bool,
     school_name: String,
     username: String,
     role: String,
@@ -862,6 +864,8 @@ fn dashboard(state: State<AppState>) -> Result<Dashboard, String> {
     let privacy_ack = meta_get(db, "privacy_ack").as_deref() == Some("yes");
     let bv = meta_get(db, "backup_verified").as_deref() == Some("yes");
     let dp = meta_get(db, "drill_passed").as_deref() == Some("yes");
+    let test_override = meta_get(db, "test_override").as_deref() == Some("yes");
+    let test_override_available = real_data_test_override_available();
     let school_name = meta_get(db, "school_name").unwrap_or_else(|| "School".into());
     let last_backup_at = meta_get(db, "last_backup_at");
     let last_drill_at = meta_get(db, "last_drill_at");
@@ -897,6 +901,9 @@ fn dashboard(state: State<AppState>) -> Result<Dashboard, String> {
     if !privacy_ack {
         blocking.push("Privacy notice not acknowledged by the admin.".into());
     }
+    if test_override {
+        warning.push("TEST MODE: the production real-data gate was bypassed. Use only synthetic or explicitly authorized test data; this is not a production approval.".into());
+    }
     if students > 0 && scores == 0 {
         warning.push("No scores entered yet.".into());
     }
@@ -915,6 +922,8 @@ fn dashboard(state: State<AppState>) -> Result<Dashboard, String> {
         live: data_mode == "real",
         data_mode,
         privacy_ack,
+        test_override,
+        test_override_available,
         school_name,
         username: s.username,
         role: s.role,
@@ -2596,8 +2605,16 @@ fn privacy_ack(state: State<AppState>) -> Result<String, String> {
     Ok("Privacy notice acknowledged.".into())
 }
 
+fn real_data_test_override_available() -> bool {
+    (cfg!(debug_assertions) || cfg!(feature = "allow-real-data-test"))
+        && std::env::var("AGM_TEST_ALLOW_REAL_DATA").ok().as_deref() == Some("1")
+}
+
 #[tauri::command]
-fn enable_real_mode(state: State<AppState>) -> Result<String, String> {
+fn enable_real_mode(
+    state: State<AppState>,
+    test_override_reason: Option<String>,
+) -> Result<String, String> {
     let s = session_snapshot(&state)?;
     require_active(&s)?;
     require_role(&s, &["admin"])?;
@@ -2606,27 +2623,58 @@ fn enable_real_mode(state: State<AppState>) -> Result<String, String> {
     if meta_get(db, "data_mode").as_deref() == Some("real") {
         return Ok("Already in real-data mode.".into());
     }
-    let school = meta_get(db, "school_name").unwrap_or_default();
-    if school.trim().is_empty() || school == "School" {
-        return Err("Set the school name before enabling real data.".into());
-    }
-    if meta_get(db, "backup_verified").as_deref() != Some("yes") {
-        return Err("Enable blocked: no verified backup.".into());
-    }
-    if meta_get(db, "drill_passed").as_deref() != Some("yes") {
-        return Err("Enable blocked: restore drill not passed.".into());
-    }
-    if meta_get(db, "privacy_ack").as_deref() != Some("yes") {
-        return Err("Enable blocked: privacy notice not acknowledged.".into());
-    }
     let (students, scores, reports, _) = db_counts(db);
     if students > 0 || scores > 0 || reports > 0 {
         return Err("Enable blocked: demo data is still present. Clear demo data first, then re-run backup and drill.".into());
     }
+
+    let mut gate = vec![];
+    let school = meta_get(db, "school_name").unwrap_or_default();
+    if school.trim().is_empty() || school == "School" {
+        gate.push("school name not set");
+    }
+    if meta_get(db, "backup_verified").as_deref() != Some("yes") {
+        gate.push("no verified backup");
+    }
+    if meta_get(db, "drill_passed").as_deref() != Some("yes") {
+        gate.push("restore drill not passed");
+    }
+    if meta_get(db, "privacy_ack").as_deref() != Some("yes") {
+        gate.push("privacy notice not acknowledged");
+    }
+
+    let reason = test_override_reason.unwrap_or_default().trim().to_string();
+    let override_available = real_data_test_override_available();
+    if override_available && !reason.is_empty() && reason.chars().count() < 12 {
+        return Err("Test override reason must be at least 12 characters.".into());
+    }
+    let override_active = override_available && reason.chars().count() >= 12;
+    if !gate.is_empty() && !override_active {
+        return Err(format!("Enable blocked: {}.", gate.join("; ")));
+    }
+
     meta_set(db, "data_mode", "real", &s.username);
     meta_set(db, "live", "yes", &s.username);
+    if !gate.is_empty() {
+        meta_set(db, "test_override", "yes", &s.username);
+        meta_set(db, "test_override_reason", &reason, &s.username);
+        meta_set(db, "test_override_at", &now_iso(), &s.username);
+        meta_set(db, "test_override_by", &s.username, &s.username);
+        audit(
+            db,
+            &s.username,
+            "real_mode.test_override",
+            "school",
+            "demo",
+            &format!("production gate bypassed: {reason}"),
+        );
+    }
     persist_state(&state, db)?;
-    Ok("REAL DATA MODE enabled. Import only authorized student data.".into())
+    if !gate.is_empty() {
+        Ok("REAL DATA TEST MODE enabled. The production gate was bypassed; use test data only.".into())
+    } else {
+        Ok("REAL DATA MODE enabled. Import only authorized student data.".into())
+    }
 }
 
 #[tauri::command]
