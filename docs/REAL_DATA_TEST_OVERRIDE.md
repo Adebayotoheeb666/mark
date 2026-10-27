@@ -22,9 +22,10 @@ The override is only available when **all** of these are true:
 5. The caller supplies a reason of at least 12 characters. The reason is written to the audit log
    as `real_mode.test_override`, together with the actor and timestamp.
 
-The app then sets `data_mode = real`, `test_override = yes`, and shows a red **REAL DATA TEST MODE**
-banner on the dashboard and backup screen. `backup_verified`, `drill_passed` and `privacy_ack` stay
-`no`, so the readiness checklist remains honest.
+The app then sets `data_mode = real`. When at least one gate item is still missing, it also sets
+`test_override = yes` and shows a red **REAL DATA TEST MODE** banner on the dashboard and backup
+screen. `backup_verified`, `drill_passed` and `privacy_ack` stay `no`, so the readiness checklist
+remains honest.
 
 ## Run it
 
