@@ -5,6 +5,7 @@
 **Scope:** Agent Mark Hub desktop `v0.2.0` (Tauri + Rust + encrypted SQLite) and the mobile
 companion (PWA / Capacitor APK), first single-school pilot.
 **Decision owners:** School Head/DPO + Agent Mark tech lead. Independent reviewer signs the security gate.
+**How to close the external gates:** `docs/EXTERNAL_GATES_PLAYBOOK.md`.
 
 **Confirmed for the first pilot (2026-10-25):**
 - Shared staffroom Windows PC (multiple staff accounts, one school).

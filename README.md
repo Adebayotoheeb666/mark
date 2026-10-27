@@ -14,6 +14,8 @@ Local-first school records & report-card system (No-AI).
   PII is still blocked.
 - `docs/PILOT_DEPLOYMENT_RUNBOOK.md` and `docs/pilot-pack/` — school deployment, DPIA, authorization,
   notices, retention, incident, data-subject, training, and sign-off templates.
+- `docs/EXTERNAL_GATES_PLAYBOOK.md` — step-by-step certificate, independent-review, and school/legal
+  sign-off path, including owners, evidence, commands, and a combined timeline.
 
 ## Layout
 ```

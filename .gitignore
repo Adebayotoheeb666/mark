@@ -49,3 +49,4 @@ website/.vercel/
 *.log
 *.tmp
 /pilot-dist/
+/pilot-dist-signed/
