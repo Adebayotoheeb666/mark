@@ -175,8 +175,10 @@ entirely, delete `.cargo/config.toml`, and build with the default MSVC toolchain
    `Correct`/`Escalate` resolve without one. Flags never change a score.
 7. **Comments** → pick subject/band, choose a sentence, edit, save. Length gate blocks >210 chars.
 8. **Reports** → `Draft all complete students`. Students with missing scores are skipped, not faked.
-   Then teacher review → head review → `Lock+Sign` (only the head can lock/sign). `View` opens the
-   print sheet — unlocked reports print a red **DRAFT — NOT OFFICIAL** banner.
+   Then teacher review → head review → `Lock+Sign` (only the head can lock/sign). If a score, name,
+   class, comment, assessment, or rule version changes after drafting, approval/lock refuses with
+   `REP-INT-04`; re-draft before approving. `View` opens the print sheet — unlocked reports print a
+   red **DRAFT — NOT OFFICIAL** banner.
 9. **Backup & real-data gate** → `Clear demo`, `Backup now`, `Verify latest`, `Run restore drill`,
    acknowledge the privacy notice, then `Enable real data`. The app refuses to enable real mode until
    every gate is true. The dashboard warns when the last backup is over 24 hours old, over 7 days old,

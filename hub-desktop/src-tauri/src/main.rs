@@ -2452,6 +2452,115 @@ fn reports(state: State<AppState>) -> Result<Vec<Report>, String> {
         .collect())
 }
 
+fn report_source_matches(
+    db: &Connection,
+    payload: &serde_json::Value,
+) -> Result<bool, String> {
+    let sc = payload
+        .get("student")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let term = payload
+        .get("term")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if sc.is_empty() || term.is_empty() {
+        return Ok(false);
+    }
+    let student: Option<(String, String, String)> = db
+        .query_row(
+            "SELECT class, first, last FROM students WHERE short_code=?",
+            [sc],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| format!("Could not read the student for this report: {e}"))?;
+    let Some((class, first, last)) = student else {
+        return Ok(false);
+    };
+    let expected_name = format!("{first} {last}");
+    if payload.get("name").and_then(|v| v.as_str()) != Some(expected_name.as_str())
+        || payload.get("class").and_then(|v| v.as_str()) != Some(class.as_str())
+    {
+        return Ok(false);
+    }
+    if payload.get("template").and_then(|v| v.as_str()) != Some(TEMPLATE_VER) {
+        return Ok(false);
+    }
+    let rules = rule_version();
+    if payload.get("rules").and_then(|v| v.as_str()) != Some(rules.as_str()) {
+        return Ok(false);
+    }
+
+    let mut stmt = db
+        .prepare("SELECT subject, label, max_score, weight FROM assessments")
+        .map_err(|e| format!("Could not read assessments: {e}"))?;
+    let assessments: Vec<(String, String, f64, f64)> = stmt
+        .query_map([], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+        })
+        .map_err(|e| format!("Could not read assessments: {e}"))?
+        .flatten()
+        .collect();
+    for subject in ["MATHS", "ENG"] {
+        let mut parts: Vec<(f64, f64, f64)> = vec![];
+        for (_, label, max, weight) in assessments.iter().filter(|(s, _, _, _)| s == subject) {
+            let value: Option<f64> = db
+                .query_row(
+                    "SELECT value FROM scores WHERE student_code=? AND subject=? AND label=? ORDER BY version DESC LIMIT 1",
+                    params![sc, subject, label],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("Could not read scores for this report: {e}"))?;
+            let Some(value) = value else {
+                return Ok(false);
+            };
+            parts.push((value, *max, *weight));
+        }
+        let expected = assessments
+            .iter()
+            .filter(|(s, _, _, _)| s == subject)
+            .count();
+        if expected == 0 || parts.len() != expected {
+            return Ok(false);
+        }
+        let total: f64 = parts.iter().map(|(v, _, _)| v).sum();
+        let avg_t = weighted_avg_tenths(&parts)?;
+        let expected_result = serde_json::json!({
+            "total": total,
+            "avg": avg_t as f64 / 10.0,
+            "grade": map_grade(avg_t),
+        });
+        if payload.get("results").and_then(|r| r.get(subject)) != Some(&expected_result) {
+            return Ok(false);
+        }
+    }
+
+    let mut stmt = db
+        .prepare("SELECT subject, final_text FROM comments WHERE student_code=? AND term=?")
+        .map_err(|e| format!("Could not read comments for this report: {e}"))?;
+    let comments: std::collections::HashMap<String, String> = stmt
+        .query_map(params![sc, term], |r| Ok((r.get(0)?, r.get(1)?)))
+        .map_err(|e| format!("Could not read comments for this report: {e}"))?
+        .flatten()
+        .collect();
+    let payload_comments = payload
+        .get("comments")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    if payload_comments.len() != comments.len() {
+        return Ok(false);
+    }
+    for (subject, text) in comments {
+        if payload_comments.get(&subject).and_then(|v| v.as_str()) != Some(text.as_str()) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 #[tauri::command]
 fn report_approve(state: State<AppState>, id: String) -> Result<String, String> {
     let s = session_snapshot(&state)?;
@@ -2462,16 +2571,25 @@ fn report_approve(state: State<AppState>, id: String) -> Result<String, String> 
     }
     let guard = db_guard(&state)?;
     let db = guard.as_ref().ok_or("Sign in required.")?;
-    let (status, approvals): (String, String) = db
-        .query_row("SELECT status, approvals FROM reports WHERE id=?", [&id], |r| {
-            Ok((r.get(0)?, r.get(1)?))
-        })
+    let (status, approvals, payload): (String, String, String) = db
+        .query_row(
+            "SELECT status, approvals, payload FROM reports WHERE id=?",
+            [&id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
         .optional()
         .unwrap()
         .ok_or("unknown report")?;
     let allowed = (role == "teacher" && status == "draft") || (role == "head" && status == "reviewed");
     if !allowed {
         return Err(format!("cannot approve as {role} in status {status}"));
+    }
+    let payload_json: serde_json::Value = serde_json::from_str(&payload)
+        .map_err(|e| format!("Could not read the report payload: {e}"))?;
+    if !report_source_matches(db, &payload_json)? {
+        return Err(
+            "REP-INT-04: source data changed after this draft - re-draft before approving.".into(),
+        );
     }
     let mut arr: Vec<serde_json::Value> = serde_json::from_str(&approvals).unwrap();
     arr.push(serde_json::json!({"by": s.username, "role": role}));
@@ -2519,6 +2637,13 @@ fn report_lock(state: State<AppState>, id: String) -> Result<String, String> {
     let check = hex::encode(Sha256::digest(payload.as_bytes()));
     if check != hash {
         return Err("REP-INT-02: payload hash mismatch — regenerate".into());
+    }
+    let payload_json: serde_json::Value = serde_json::from_str(&payload)
+        .map_err(|e| format!("Could not read the report payload: {e}"))?;
+    if !report_source_matches(db, &payload_json)? {
+        return Err(
+            "REP-INT-04: source data changed after this draft - re-draft before locking.".into(),
+        );
     }
     let (sk, _) = hub_keys(db);
     let sig = hex::encode(sk.sign(payload.as_bytes()).to_bytes());

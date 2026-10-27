@@ -156,6 +156,8 @@ a duplicate/conflict you cannot explain, or a backup/drill failure.
 ### Term / report cycle
 - Back up before drafting, before locking, and after the term's reports are signed.
 - Teacher review → head review → head lock/sign. Admin cannot approve or lock.
+- If a score, student detail, comment, assessment, or rule version changes after drafting, re-draft
+  before approval. The app refuses stale drafts with `REP-INT-04` instead of signing them.
 - Export or print only the minimum needed. Treat every PDF/print as personal data.
 - Run a restore drill at least monthly and before a new term.
 

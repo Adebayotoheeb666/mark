@@ -107,8 +107,22 @@ JS = r"""
   step('drafts', await inv('reports_draft_all', { term: '2026-T1' }));
   const reps = await inv('reports');
   step('reports_total', reps.length);
-  const draft = reps.find(r => r.status === 'draft');
+  let draft = reps.find(r => r.status === 'draft');
   step('first_report', draft ? { student: draft.student_code, status: draft.status, hash_len: draft.hash.length } : null);
+  const draftIndex = codes.indexOf(draft.student_code);
+  const ca1Current = Math.round(20 * (0.55 + 0.07 * ((draftIndex + 3) % 5)));
+  const ca1New = ca1Current >= 10 ? ca1Current - 1 : ca1Current + 1;
+  await inv('score_update', {
+    student: draft.student_code, subject: 'MATHS', label: 'CA1',
+    value: ca1New, reason: 'E2E stale report source check',
+  });
+  await expectError('stale_draft_blocked', () => inv('report_approve', { id: draft.id }), /REP-INT-04/);
+  step('redraft_after_correction', await inv('reports_draft_all', { term: '2026-T1' }));
+  const reps2 = await inv('reports');
+  draft = reps2
+    .filter(r => r.student_code === draft.student_code && r.status === 'draft')
+    .sort((a, b) => b.version - a.version)[0];
+  step('latest_draft', { student: draft.student_code, version: draft.version, hash_len: draft.hash.length });
   step('approve_teacher', await inv('report_approve', { id: draft.id }));
   await expectError('teacher_cannot_backup', () => inv('backup_create'), /admin/i);
 

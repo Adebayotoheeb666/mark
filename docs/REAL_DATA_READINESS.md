@@ -37,6 +37,7 @@ install/upgrade testing; it is **not** a public release.
 | Restore / drill | Restore into a fresh in-memory DB; verify counts, digest and audit chain; only then replace live state. First-run disaster recovery restores from the backup folder when `hub.db` is missing. | `restore_backup`, `recover_from_backup`, `drill_run`; E2E, recover smoke |
 | Real-data mode | Defaults to `demo`; `real` requires zero demo rows, verified backup, passed drill, school name and privacy acknowledgment. | `enable_real_mode`; E2E |
 | Data lifecycle | Admin-only student edit/export/delete; score correction appends an immutable version with an 8+ char reason; admin-only score deletion; double-confirmed live-data purge that keeps the audit log and leaves backups. | `student_update`, `student_export`, `student_delete`, `score_update`, `score_delete`, `purge_all_data`; lifecycle smoke |
+| Report integrity | Approval and lock re-check the report's source snapshot. A score, student, comment, assessment, or rule-version change after drafting returns `REP-INT-04` and requires a re-draft. | `report_source_matches`; E2E stale-draft check |
 | CSV roster | Quoted fields, embedded commas, doubled quotes, CRLF, BOM, strict header check, field length/control-char validation, transactional import. | `parse_csv_records`; Rust tests + lifecycle smoke |
 | Mobile local store | Passcode-derived key (PBKDF2-SHA-256, 310,000 iterations), AES-256-GCM envelope in `localStorage`, 8+ character passcode, 5-minute default auto-lock, lock button, wipe. Android shell hardened (no backup, no screenshots). | `website/app/app.js`; `scripts/patch_android_hardening.js`; browser smoke |
 | Mobile transfer | `AGMMOB01` file: salt(16) + IV(12) + AES-256-GCM ciphertext, separate 12+ character transfer passphrase, AAD `AGM-MOBILE-TRANSFER-V1`. Desktop import is admin-only, real-mode-gated, dry-run first, idempotent. | `mobile_import`; Rust cross-implementation fixture + E2E |
@@ -83,9 +84,10 @@ database, encrypted persist/reopen, backup round-trip/restore-to-fresh, tampered
 manifest, missing manifest, wrong hub key, disk backup discovery, vault-kit adoption, quoted/CRLF CSV
 parsing, unclosed quotes, student-code/control-character validation, and a browser-generated `.agmm`
 fixture (proves the PWA and Rust use the same PBKDF2/AES-GCM format). The E2E covers setup, roles,
-wrong password, demo clearing, backup, verify, drill, privacy acknowledgment, enabling real mode,
-mobile dry-run/import/idempotence, tamper rejection, and disaster recovery from the on-disk backup
-kit. `recover_smoke.py` additionally deletes `hub.db`, `vault.json`, and their `.bak` copies, starts
+wrong password, stale-draft source rejection (`REP-INT-04`), demo clearing, backup, verify, drill,
+privacy acknowledgment, enabling real mode, mobile dry-run/import/idempotence, tamper rejection, and
+disaster recovery from the on-disk backup kit. `recover_smoke.py` additionally deletes `hub.db`,
+`vault.json`, and their `.bak` copies, starts
 the app with only the backup folder, and proves the app adopts `vault-BK-*.json`, restores, and
 unlocks. `lifecycle_smoke.py` covers quoted CSV, bad headers, student edit/export/delete, score
 correction/deletion, the fingerprint, the purge, and the audit actions. `test_override_smoke.py`
