@@ -578,10 +578,16 @@ fn setup(
         }?;
         db.execute_batch(SCHEMA)
             .map_err(|e| format!("Cannot initialize schema: {e}"))?;
+        // Ensure new school setup starts completely clean with zero demo data
+        let _ = db.execute("DELETE FROM scores", []);
+        let _ = db.execute("DELETE FROM flags", []);
+        let _ = db.execute("DELETE FROM comments", []);
+        let _ = db.execute("DELETE FROM reports", []);
+        let _ = db.execute("DELETE FROM students", []);
         meta_set(&db, "schema_version", SCHEMA_VERSION, &username);
         meta_set(&db, "school_name", &school_name, &username);
         meta_set(&db, "data_mode", "demo", &username);
-        meta_set(&db, "demo_cleared", "no", &username);
+        meta_set(&db, "demo_cleared", "yes", &username);
         meta_set(&db, "privacy_ack", "no", &username);
         meta_set(&db, "backup_verified", "no", &username);
         meta_set(&db, "drill_passed", "no", &username);

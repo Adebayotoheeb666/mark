@@ -1,29 +1,29 @@
 {
   "version": "0.2.0",
   "channel": "pilot",
-  "released": "2026-10-25",
-  "notes": "Agent Mark Hub 0.2.0: encrypted local vault, staff accounts and roles, backup/verify/restore drill, disaster recovery from the backup kit, real-data gate, and encrypted mobile .agmm transfer.",
+  "released": "2026-10-29",
+  "notes": "Agent Mark Hub 0.2.0: NSIS per-user installer, MSI for managed deployment, portable ZIP, and the mobile companion (PWA).",
   "windows": {
     "installer": {
       "file": "downloads/Agent-Mark-Hub-0.2.0-x64-setup.exe",
-      "bytes": 6211222,
-      "sha256": "10333E64F00068009B4BB6E23FCD5DE87918DFCEEC3C5C7AB4296FE7868D430D",
+      "bytes": 6261090,
+      "sha256": "EEAB1041BC879A99EEE4C9B52FC63272AAE46A9AA034706100765294EBB7F4AF",
       "kind": "nsis",
       "install_mode": "currentUser",
       "requires_admin": false
     },
     "msi": {
       "file": "downloads/Agent-Mark-Hub-0.2.0-x64.msi",
-      "bytes": 8437760,
-      "sha256": "D3765C89B8972B6360C86EBE2439D3D4AFD46FDD79D783E75568E939813618CD",
+      "bytes": 8491008,
+      "sha256": "E96ED77CC8C343A90A000351E8855C48E11A75AF3F3ABE994B9BCDB0693D58F8",
       "kind": "msi",
       "install_mode": "perMachine",
       "requires_admin": true
     },
     "portable": {
       "file": "downloads/Agent-Mark-Hub-0.2.0-windows-x64-portable.zip",
-      "bytes": 12296632,
-      "sha256": "5FE13828787F09BBE52AA29020D316DF54782DBA790F7140568D629E25E46D17",
+      "bytes": 6296353,
+      "sha256": "46BDCBBD23C8E045C3A09689A19F684EFD26FBE9897F4DC3DFAE2827A3FCBCCE",
       "kind": "zip"
     },
     "minimum_os": "Windows 10 (64-bit)",
@@ -47,8 +47,16 @@
     "ai": false,
     "network_calls_for_student_data": false
   },
+  "build": {
+    "git_commit": "69c869fd70cecf16a5419a5d93c1dd8855e321ee",
+    "built_at": "2026-10-28T23:12:53Z",
+    "signing": {
+      "signed": false,
+      "status": "unsigned-internal-pilot"
+    }
+  },
   "pilot_gate": {
     "real_student_data_allowed": false,
-    "reason": "External security review has not closed the open findings; no Windows code-signing certificate yet; the published APK is debug-signed."
+    "reason": "External security review has not closed the open findings; the Windows artifacts are unsigned (internal pilot only)."
   }
 }
